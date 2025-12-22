@@ -4,6 +4,7 @@ import cv2
 import time
 
 from utils.image_generations import create_frame_bgr
+from utils.screen_recorder import ScreenRecorder
 
 from utils.global_definitions import (
     red_bgr, green_bgr, blue_bgr, white_bgr, black_bgr,
@@ -128,9 +129,14 @@ def sender():
 
 if __name__ == "__main__":
 
+    recorder = ScreenRecorder("recordings/sender_v1.mp4", 30)
+    recorder.start()
+
     window = "sender"
     cv2.namedWindow(window, cv2.WINDOW_NORMAL)
     cv2.setWindowProperty(window, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN) # Sets the window to fullscreen
 
     # Runs the sender for receiever version 1
     sender()
+
+    recorder.stop()
