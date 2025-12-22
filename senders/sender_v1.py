@@ -19,6 +19,7 @@ timer = 0
 message = "HELLO"
 
 frame = None
+interupted = False
 
 
 def bit_frames(bgr, duration, width=width, height=height):
@@ -34,6 +35,8 @@ def bit_frames(bgr, duration, width=width, height=height):
         None
     """
 
+    global interupted
+
     timer = time.time()
     while time.time() - timer < duration:
 
@@ -41,7 +44,7 @@ def bit_frames(bgr, duration, width=width, height=height):
         cv2.imshow(window, frame)
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
-            cv2.destroyAllWindows()
+            interupted = True
             return
         
 
@@ -68,6 +71,7 @@ def sender():
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
             cv2.destroyAllWindows()
+            print("[INFO] Interupted")
             return
         
     
@@ -84,12 +88,27 @@ def sender():
                 bit_frames(white_bgr, bit_time)
             else:
                 bit_frames(black_bgr, bit_time)
+
+            if interupted:
+                cv2.destroyAllWindows
+                print("[INFO] Interupted")
+                return
             
             # Sync frame in between each bit
             bit_frames(blue_bgr, bit_time)
-        
+
+            if interupted:
+                cv2.destroyAllWindows
+                print("[INFO] Interupted")
+                return
+            
         # Red frame to indicate the end of the character
         bit_frames(red_bgr, bit_time)
+
+        if interupted:
+            cv2.destroyAllWindows
+            print("[INFO] Interupted")
+            return
 
     
     # A green frame at the end to signal the end of sender
@@ -102,6 +121,7 @@ def sender():
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
             cv2.destroyAllWindows()
+            print("[INFO] Interupted")
             return
 
 
