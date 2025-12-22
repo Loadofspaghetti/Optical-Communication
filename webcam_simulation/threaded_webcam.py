@@ -1,79 +1,12 @@
-# webcam\webcam_simulation.py
+# webcam_simulation/threaded_webcam.py
 
 import threading
 import cv2
 import time
-import os
 
-# --- Definitions ---
-
-sender_output_width = 1920 # Width of the sender output in pixels
-sender_output_height = 1080 # Height of the sender output in pixels
-
-
-
-# --- No threading at all ---
-
-class chronical_webcam:
-
-    """
-    Synchronous, zero-thread video reader. Returns frames EXACTLY in the order they are encoded.
-
-    """
-
-    def __init__(self, video_path, loop = False):
-
-        """
-        
-        """
-
-        self.cap = cv2.VideoCapture(video_path)
-
-        if not self.cap.isOpened():
-            raise ValueError(f"Could not open video: {video_path}")
-        
-        self.loop = loop
-        self.stopped = False
-
-    def read(self):
-
-        """
-        
-        """
-
-        if self.stopped:
-            return False, None
-
-        ret, frame = self.cap.read()
-
-        if not ret:
-
-            if self.loop:
-                self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                ret, frame = self.cap.read()
-
-            else:
-                self.stopped = True
-                return False, None
-
-        return True, frame
-
-    def isOpened(self):
-
-        """
-
-        """
-
-        return not self.stopped
-
-    def release(self):
-
-        """
-
-        """
-
-        self.stopped = True
-        self.cap.release()
+from utils.global_definitions import (
+    width, height
+)
 
 
 
@@ -266,7 +199,7 @@ if __name__ == "__main__":
         time.sleep(0.01)
 
     cv2.namedWindow("sjöbo", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("sjöbo", sender_output_width, sender_output_height)
+    cv2.resizeWindow("sjöbo", width, height)
 
     while video_capture.isOpened():
         ret, frame = video_capture.read()
