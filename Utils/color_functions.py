@@ -3,6 +3,8 @@
 import cv2
 import numpy as np
 
+from collections import Counter
+
 from utils.global_definitions import (
     red_lower_hsv_limit_1, red_upper_hsv_limit_1,
     red_lower_hsv_limit_2, red_upper_hsv_limit_2,
@@ -12,6 +14,39 @@ from utils.global_definitions import (
     blue_lower_hsv_limit, blue_upper_hsv_limit
 )
 
+class Average_calc:
+
+    def __init__(self):
+        self.frames = []
+
+    def add_frame(self, frame):
+        self.frames.append(frame)
+
+    def majority(self):
+        """
+        Returns the majority (most common) color across collected frames
+        """
+        if not self.frames:
+            return None
+        
+        colors = []
+
+        for frame in self.frames:
+            color = dominant_color(frame)
+            colors.append(color)
+        
+        # Clear frames after processing
+        self.frames = []
+        
+        # Find majority color
+        majority_color = Counter(colors).most_common(1)[0][0]
+        return majority_color
+
+    def reset(self):
+        self.frames = []
+
+# Initialized class
+average = Average_calc()
 
 def dominant_color(frame):
     """
@@ -22,7 +57,6 @@ def dominant_color(frame):
 
     Returns:
         The dominant color as a string (e.g., "red", "white", etc.).
-    
     """
 
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -43,7 +77,7 @@ def dominant_color(frame):
         "white": int(cv2.countNonZero(white_mask)),
         "black": int(cv2.countNonZero(black_mask)),
         "green": int(cv2.countNonZero(green_mask)),
-        "blue": int(cv2.countNonZero(blue_mask)),
+        "blue": int(cv2.countNonZero(blue_mask))
     }
 
     return max(counts, key = counts.get)

@@ -5,7 +5,7 @@ import numpy as np
 import time
 
 from webcam_simulation.threaded_webcam import threaded_webcam
-from utils.color_functions import dominant_color
+from utils.color_functions import dominant_color, average
 
 from utils.global_definitions import (
     blue_bgr, green_bgr, red_bgr, black_bgr, white_bgr,
@@ -45,6 +45,9 @@ class receiver:
         self.end_x_roi = width//2 + 25
         self.start_y_roi = height//2 - 25
         self.end_y_roi = height//2 + 25
+
+        # Booleans
+        self.decoding_started = False
         
     
     def green_sync(self):
@@ -54,24 +57,55 @@ class receiver:
         is no longer detected
         """
 
-        # No green frame detected, switching state
+        
+        # Wait for green to disappear consistently before decoding
         if self.color != "green":
-            print("[INFO] No green detected, switching to decoding bits...")
+            self.non_green_count += 1
+        else:
+            self.non_green_count = 0
+
+        # Require a few non-green frames to avoid noise
+        if self.non_green_count >= 3:
+            print("[INFO] Sync complete, switching to decoding bits...")
             self.which_function = "decoding_bits"
 
     def decoding_bits(self):
         """
-        Docstring for decoding_bits
+        Decoding bits through color recognition
+
+        Arguments:
+            self
+
+        Returns:
+            None
         """
 
-        if self.color == "white" and self.last_color != "white":
-            self.bits += "1"
+        # When the decoding is complete switch to decoding message
+        if self.color == "green":
+            print("[INFO] Green detected, message complete")
+            self.decoded_message = self.message
 
-        elif self.color == "black" and self.last_color != "black":
-            self.bits += "0"
+        # Grabs the average color
+        if self.color == "blue" and self.last_color != "blue":
 
+            average_color = average.majority()
+            assert average_color == "white" or average_color == "black", \
+                "No black or white found, out of sync..."
+                        
+            if average_color == "white":
+                self.bits += "1"
+
+            elif average_color == "black":
+                self.bits += "0"
+
+        # Puts the black/white frames inside ann array
+        elif self.color == "black" or self.color == "white":
+            average.add_frame(self.roi)
+
+        # End-of-character marker
         elif self.color == "red" and self.last_color != "red":
-
+            
+            # Decode only FULL bytes
             while len(self.bits) >= 8:
                 self.byte = self.bits[:8]
                 self.bits = self.bits[8:]
@@ -79,30 +113,20 @@ class receiver:
                 try:
                     ch = chr(int(self.byte, 2))
 
-                except:
+                except ValueError:
                     ch = '?'
 
                 self.message += ch
                 print(f"Received char: {ch}")
 
             if 0 < len(self.bits) < 8:
-                self.byte = self.bits.ljust(8, '0')
-
-                try:
-                    ch = chr(int(self.byte, 2))
-
-                except:
-                    ch = '?'
-
-                self.message += ch
-                print(f"Received char (padded): {ch}")
+                print(f"[WARNING] Dropping incomplete byte: {self.bits}")
+                self.bits = ""
+            
+            # Final green = message complete
             print(f"[INFO] Decoded bits: {self.bits}")
             self.bits = ""
-        
-        # When the decoding is complete switch to decoding message
-        if self.color == "green":
-            print("[INFO] Green detected, message complete")
-            self.decoded_message = self.message
+
 
     def default(self):
         print("[WARNING] No method pinpointed, fallback activated")
@@ -129,6 +153,9 @@ class receiver:
             _, frame = self.video_cap.read()
             self.frame = frame
 
+            if not ret:
+                continue
+
             # Extract the ROI from the frame
             self.roi = self.frame[self.start_y_roi:self.end_y_roi, self.start_x_roi:self.end_x_roi] 
             cv2.rectangle (self.frame, (self.start_x_roi, self.start_y_roi), 
@@ -138,16 +165,16 @@ class receiver:
             self.color = dominant_color(self.roi)
 
             # Initialize the methods when green is detected
-            if not hasattr(self.receive_message, "decoding_started") and self.color == "green":
+            if not self.decoding_started and self.color == "green":
                 self.which_function = "green_sync"
                 print("[INFO] Green detected, green sync initialized...")
-                receiver.receive_message.decoding_started = (True)
+                self.decoding_started = True
 
             # Displaying the frames
             cv2.imshow("Webcam Receiver", self.frame)
             cv2.imshow("ROI", self.roi)
             
-            if hasattr(self.receive_message, "decoding_started"):
+            if self.decoding_started:
                 # Calls the methods 
                 self.state()
 
