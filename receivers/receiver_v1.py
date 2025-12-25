@@ -69,6 +69,7 @@ class receiver:
             print("[INFO] Sync complete, switching to decoding bits...")
             self.which_function = "decoding_bits"
 
+
     def decoding_bits(self):
         """
         Decoding bits through color recognition
@@ -122,9 +123,7 @@ class receiver:
             if 0 < len(self.bits) < 8:
                 print(f"[WARNING] Dropping incomplete byte: {self.bits}")
                 self.bits = ""
-            
-            # Final green = message complete
-            print(f"[INFO] Decoded bits: {self.bits}")
+
             self.bits = ""
 
 
