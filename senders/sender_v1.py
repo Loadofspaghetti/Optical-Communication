@@ -11,132 +11,134 @@ from utils.global_definitions import (
     width, height
 )
 
-start_time = 0.5
-bit_time = 0.3
-end_time = 0.5
 
-timer = 0
+class sender:
 
-message = "HELLO"
+    def __init__(self):
+        self.start_time = 0.5
+        self.bit_time = 0.3
+        self.end_time = 0.5
 
-frame = None
-interupted = False
+        self.timer = 0
+
+        self.message = "HELLO"
+
+        self.frame = None
+        self.interupted = False
 
 
-def bit_frames(bgr, duration, width=width, height=height):
-    """
-    Gets the bgr and then keeps the frame the same for a period of time
-    
-    Arguments:
-        bgr (tuple): An array to create the image with
-        width (int): An int for the width
-        height (int): An int for the height
+    # --- Helper method ---
 
-    Returns:
-        None
-    """
+    def phase(self, which_phase):
+        getattr(self, which_phase)()
 
-    global interupted
-
-    timer = time.time()
-    while time.time() - timer < duration:
-
-        frame = create_frame_bgr(bgr, width, height)
-        cv2.imshow(window, frame)
-
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            interupted = True
-            return
+    def bit_frames(self, bgr, duration, width=width, height=height):
+        """
+        Gets the bgr and then keeps the frame the same for a period of time
         
+        Arguments:
+            bgr (tuple): An array to create the image with
+            width (int): An int for the width
+            height (int): An int for the height
 
-def sender():
-    """
-    Runs a series of shifting colors to be intepreted to bits
-    by using openCV and imshow
+        Returns:
+            None
+        """
 
-    Arguments:
-        None
+        self.timer = time.time()
+        while time.time() - self.timer < duration:
 
-    Returns:
-        None
-    """
+            self.frame = create_frame_bgr(bgr, width, height)
+            cv2.imshow(window, self.frame)
 
-
-    # A green start frame to signal the beginning of the sender
-
-    timer = time.time()
-    while time.time() - timer < start_time:
-
-        frame = create_frame_bgr(green_bgr, width, height)
-        cv2.imshow(window, frame)
-
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            cv2.destroyAllWindows()
-            print("[INFO] Interupted")
-            return
-        
-    
-    # The actual bits
-        
-    for character in message:
-
-        bits = format(ord(character), "08b")
-
-        for bit in bits:
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                self.interupted = True
+                return
             
-            # The actual bits
-            if bit == "1":
-                bit_frames(white_bgr, bit_time)
-            else:
-                bit_frames(black_bgr, bit_time)
 
-            if interupted:
+    # --- Phases ---
+
+    def green_phase(self):
+
+        # A green start frame to signal the beginning of the sender
+        self.timer = time.time()
+        while time.time() - self.timer < self.start_time:
+
+            self.frame = create_frame_bgr(green_bgr, width, height)
+            cv2.imshow(window, self.frame)
+
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                cv2.destroyAllWindows()
+                print("[INFO] Interupted")
+                return
+        
+    def bit_phase(self):
+
+        # The actual bits
+        for character in self.message:
+
+            bits = format(ord(character), "08b")
+
+            for bit in bits:
+                
+                # The actual bits
+                if bit == "1":
+                    self.bit_frames(white_bgr, self.bit_time)
+                else:
+                    self.bit_frames(black_bgr, self.bit_time)
+
+                if self.interupted:
+                    cv2.destroyAllWindows
+                    print("[INFO] Interupted")
+                    return
+                
+                # Sync frame in between each bit
+                self.bit_frames(blue_bgr, self.bit_time)
+
+                if self.interupted:
+                    cv2.destroyAllWindows
+                    print("[INFO] Interupted")
+                    return
+                
+            # Red frame to indicate the end of the character
+            self.bit_frames(red_bgr, self.bit_time)
+
+            if self.interupted:
                 cv2.destroyAllWindows
                 print("[INFO] Interupted")
                 return
-            
-            # Sync frame in between each bit
-            bit_frames(blue_bgr, bit_time)
 
-            if interupted:
-                cv2.destroyAllWindows
-                print("[INFO] Interupted")
-                return
-            
-        # Red frame to indicate the end of the character
-        bit_frames(red_bgr, bit_time)
 
-        if interupted:
-            cv2.destroyAllWindows
-            print("[INFO] Interupted")
-            return
+    # --- Main method ---
 
-    
-    # A green frame at the end to signal the end of sender
-    
-    timer = time.time()
-    while time.time() - timer < end_time:
+    def crypted_message(self):
+        """
+        Runs a series of shifting colors to be intepreted to bits
+        by using openCV and imshow
+        """
 
-        frame = create_frame_bgr(green_bgr, width, height)
-        cv2.imshow(window, frame)
+        # Green sync frame
+        self.phase("green_phase")
 
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            cv2.destroyAllWindows()
-            print("[INFO] Interupted")
-            return
+        # Bit phase
+        self.phase("bit_phase")
+
+        # Green end frame
+        self.phase("green_phase") 
 
 
 
 if __name__ == "__main__":
 
     recorder = ScreenRecorder("recordings/sender_v1.mp4", 30)
-    recorder.start()
+    #recorder.start()
 
     window = "sender"
     cv2.namedWindow(window, cv2.WINDOW_NORMAL)
     cv2.setWindowProperty(window, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN) # Sets the window to fullscreen
 
     # Runs the sender for receiever version 1
-    sender()
+    sender_ = sender()
+    sender_.crypted_message()
 
-    recorder.stop()
+    #recorder.stop()

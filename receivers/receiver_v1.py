@@ -23,7 +23,7 @@ class receiver:
         self.roi = None
 
         # Strings
-        self.which_function = ""
+        self.which_method = ""
 
         self.color = ""
         self.last_color = ""
@@ -67,7 +67,7 @@ class receiver:
         # Require a few non-green frames to avoid noise
         if self.non_green_count >= 3:
             print("[INFO] Sync complete, switching to decoding bits...")
-            self.which_function = "decoding_bits"
+            self.which_method = "decoding_bits"
 
 
     def decoding_bits(self):
@@ -136,7 +136,7 @@ class receiver:
         # to find methods dynamically by name
         # Using "()" at the end to call the method 
         # If no method found then it returns default as a safefty net
-        getattr(self, self.which_function, self.default)()
+        getattr(self, self.which_method, self.default)()
 
 
     def receive_message(self):
@@ -165,7 +165,7 @@ class receiver:
 
             # Initialize the methods when green is detected
             if not self.decoding_started and self.color == "green":
-                self.which_function = "green_sync"
+                self.which_method = "green_sync"
                 print("[INFO] Green detected, green sync initialized...")
                 self.decoding_started = True
 
