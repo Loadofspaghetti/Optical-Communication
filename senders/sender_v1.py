@@ -131,7 +131,7 @@ class sender:
 if __name__ == "__main__":
 
     recorder = ScreenRecorder("recordings/sender_v1.mp4", 30)
-    #recorder.start()
+    recorder.start()
 
     window = "sender"
     cv2.namedWindow(window, cv2.WINDOW_NORMAL)
@@ -141,4 +141,4 @@ if __name__ == "__main__":
     sender_ = sender()
     sender_.crypted_message()
 
-    #recorder.stop()
+    recorder.stop()

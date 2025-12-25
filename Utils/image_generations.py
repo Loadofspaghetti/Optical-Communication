@@ -4,6 +4,12 @@ import cv2
 import time
 import numpy as np
 
+from utils.global_definitions import (
+    green_bgr,
+    width, height, 
+    small_aruco_side_length, aruco_marker_dictionary, aruco_marker_ids
+)
+
 def create_frame_bgr(bgr, width, height):
     """
     Creates a bgr frame using the colors given with bgr
@@ -24,6 +30,35 @@ def create_frame_bgr(bgr, width, height):
     color_frame = empty_frame
 
     return color_frame
+
+def create_aruco_marker_frame():
+
+    """
+    Creates a solid color frame with ArUco markers in each corner.
+
+    Arguments:
+        None
+
+    Returns:
+        "frame": The created frame.
+
+    """
+
+    frame = create_frame_bgr(green_bgr, width, height)
+
+    aruco_marker_positions = [
+        (0, 0), # Top-left marker
+        (width - small_aruco_side_length, 0), # Top-right marker
+        (0, height - small_aruco_side_length), # Bottom-left marker
+        (width - small_aruco_side_length, height - small_aruco_side_length) # Bottom-right marker
+    ]
+
+    for (x_coordinate, y_coordinate), aruco_marker_id in zip(aruco_marker_positions, aruco_marker_ids):
+        marker = cv2.aruco.generateImageMarker(aruco_marker_dictionary, aruco_marker_id, small_aruco_side_length)
+        marker_bgr = cv2.cvtColor(marker, cv2.COLOR_GRAY2BGR)
+        frame[y_coordinate:y_coordinate + small_aruco_side_length, x_coordinate:x_coordinate + small_aruco_side_length] = marker_bgr
+
+    return frame
 
 if __name__ == "__main__":
 

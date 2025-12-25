@@ -4,7 +4,7 @@ import cv2
 import time
 import numpy as np
 
-from utils.image_generations import create_frame_bgr
+from utils.image_generations import create_frame_bgr, create_aruco_marker_frame
 from utils.screen_recorder import ScreenRecorder
 
 from utils.global_definitions import (
@@ -27,6 +27,8 @@ class sender:
 
         self.frame = None
         self.interupted = False
+
+        self.aruco_frame = create_aruco_marker_frame()
 
 
     # --- Helper method ---
@@ -68,6 +70,7 @@ class sender:
 
         self.frame = background
 
+
     def bit_frames(self, bgr, duration, width=width, height=height):
         """
         Gets the bgr and then keeps the frame the same for a period of time
@@ -95,21 +98,45 @@ class sender:
 
     # --- Phases ---
 
-    def green_phase(self):
+    def aruco_phase(self):
 
-        # A green start frame to signal the beginning of the sender
+        # An aruco frame to both help the receiver to warp the image correctly
+        # and to signal the beginning of the message
+
+        self.frame = self.aruco_frame
+        self.frame_with_margin()
+
         self.timer = time.time()
         while time.time() - self.timer < self.start_time:
-
-            self.frame = create_frame_bgr(green_bgr, width, height)
-            self.frame_with_margin()
             cv2.imshow(window, self.frame)
 
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 cv2.destroyAllWindows()
                 print("[INFO] Interupted")
                 return
+
+            time.sleep(0.001)
+
+
+    def green_phase(self):
+
+        # A green frame to signal the end of the message
+
+        self.frame = create_frame_bgr(green_bgr, width, height)
+        self.frame_with_margin()
+
+        self.timer = time.time()
+        while time.time() - self.timer < self.start_time:
+            cv2.imshow(window, self.frame)
+
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                cv2.destroyAllWindows()
+                print("[INFO] Interupted")
+                return
+
+            time.sleep(0.001)
         
+
     def bit_phase(self):
 
         # The actual bits
@@ -155,8 +182,8 @@ class sender:
         by using openCV and imshow
         """
 
-        # Green sync frame
-        self.phase("green_phase")
+        # Aruco sync frame
+        self.phase("aruco_phase")
 
         # Bit phase
         self.phase("bit_phase")
@@ -168,8 +195,8 @@ class sender:
 
 if __name__ == "__main__":
 
-    recorder = ScreenRecorder("recordings/sender_v1.mp4", 30)
-    #recorder.start()
+    recorder = ScreenRecorder("recordings/sender_v2.mp4", 30)
+    recorder.start()
 
     window = "sender"
     cv2.namedWindow(window, cv2.WINDOW_NORMAL)
@@ -179,4 +206,4 @@ if __name__ == "__main__":
     sender_ = sender("HELLO")
     sender_.crypted_message()
 
-    #recorder.stop()
+    recorder.stop()
