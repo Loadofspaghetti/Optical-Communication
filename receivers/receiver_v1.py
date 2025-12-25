@@ -139,7 +139,7 @@ class receiver:
         getattr(self, self.which_method, self.default)()
 
 
-    def receive_message(self):
+    def decrypt_message(self):
         """
         Docstring for receive_frames
         
