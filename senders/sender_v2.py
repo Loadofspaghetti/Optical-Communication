@@ -10,7 +10,7 @@ from utils.screen_recorder import ScreenRecorder
 from utils.global_definitions import (
     red_bgr, green_bgr, blue_bgr, white_bgr, black_bgr,
     gray_bgr,
-    width, height
+    width, height, margin
 )
 
 
@@ -40,7 +40,7 @@ class sender:
         If the frame is too big to fit with the margin, it will be scaled down
         while preserving aspect ratio.
         """
-        fh, fw = frame.shape[:2]
+        fh, fw = self.frame.shape[:2]
 
         # Compute available area inside the margin
         available_w = width - 2 * margin
@@ -54,7 +54,7 @@ class sender:
 
         # Resize frame if needed
         if scale < 1.0:
-            frame = cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_NEAREST)
+            self.frame = cv2.resize(self.frame, (new_w, new_h), interpolation=cv2.INTER_NEAREST)
 
         # Create background
         background = np.full((height, width, 3), gray_bgr, dtype=np.uint8)
@@ -64,9 +64,9 @@ class sender:
         y0 = (height - new_h) // 2
 
         # Place the frame
-        background[y0:y0+new_h, x0:x0+new_w] = frame
+        background[y0:y0+new_h, x0:x0+new_w] = self.frame
 
-        return background
+        self.frame = background
 
     def bit_frames(self, bgr, duration, width=width, height=height):
         """
@@ -102,6 +102,7 @@ class sender:
         while time.time() - self.timer < self.start_time:
 
             self.frame = create_frame_bgr(green_bgr, width, height)
+            self.frame_with_margin()
             cv2.imshow(window, self.frame)
 
             if cv2.waitKey(1) & 0xFF == ord("q"):

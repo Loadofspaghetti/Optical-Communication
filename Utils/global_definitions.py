@@ -36,3 +36,9 @@ blue_upper_hsv_limit = (140, 255, 255)
 
 width = 1920
 height = 1080
+
+# --- Aruco markers ---
+
+margin = 15
+
+aruco_side_length = 50
