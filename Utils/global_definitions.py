@@ -34,6 +34,61 @@ green_upper_hsv_limit = (80, 255, 255)
 blue_lower_hsv_limit = (100, 150, 0)
 blue_upper_hsv_limit = (140, 255, 255)
 
+# --- Color maps ---
+"""
+Maps the color to its relative bits
+"""
+
+color_map_1bit = [
+    black_bgr,      # 0b0 = Black
+    white_bgr       # 0b1 = White
+]
+
+color_map_2bit = [
+    black_bgr,      # 0b00 = Black
+    white_bgr,      # 0b01 = White
+    blue_bgr,       # 0b10 = Blue 
+    green_bgr       # 0b11 = Green
+]
+
+color_map_3bit = [
+    black_bgr,      # 0b000 = Black
+    white_bgr,      # 0b001 = White
+    red_bgr,        # 0b010 = Red
+    green_bgr,      # 0b011 = Green
+    blue_bgr,       # 0b100 = Blue
+    yellow_bgr,     # 0b101 = Yellow
+    cyan_bgr,       # 0b110 = Cyan
+    magenta_bgr     # 0b111 = Magenta
+]
+
+# --- idx to bits maps ---
+"""
+Bits per cell by color
+"""
+idx_to_1bit = {
+    1: 0,  # black
+    0: 1,  # white
+}
+
+idx_to_2bit = {
+    1: 0b00,  # black
+    0: 0b01,  # white
+    5: 0b10,  # blue
+    4: 0b11,  # green
+}
+
+idx_to_3bit = {
+    0: 0b001,  # white
+    1: 0b000,  # black
+    2: 0b010,  # red1
+    3: 0b011,  # green
+    4: 0b100,  # blue
+    5: 0b101,  # yellow
+    6: 0b110,  # cyan
+    7: 0b111,  # magenta
+}
+
 # --- Screen definitions ---
 
 width = 1920
@@ -43,6 +98,9 @@ margin = 15
 
 rows = 8
 columns = 8
+
+bits_per_cell = 1
+number_of_colors = 2 ** bits_per_cell 
 
 # --- ArUco marker definitions ---
 

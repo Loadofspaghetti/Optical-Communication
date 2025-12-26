@@ -4,12 +4,13 @@ import cv2
 import time
 import numpy as np
 
-from utils.image_generations import create_frame_bgr, create_aruco_marker_frame, create_bitgrid_frame
+from utils.encoding_functions import Encode
+from utils.image_generations import Create_frame
 from utils.screen_recorder import ScreenRecorder
 
 from utils.global_definitions import (
     red_bgr, green_bgr, blue_bgr, white_bgr, black_bgr,
-    gray_bgr,
+    gray_bgr, color_map_1bit, bits_per_cell,
     width, height, margin, rows, columns
 )
 
@@ -17,19 +18,35 @@ from utils.global_definitions import (
 class sender:
 
     def __init__(self, message):
+        
+        # Timers
         self.start_time = 0.5
         self.bit_time = 0.3
         self.end_time = 0.5
         self.timer = 0
 
+        # Arrays
         self.bitgrid = []
 
+        # Message
         self.message = message
 
+        self.color_map = color_map_1bit
+        self.bits_per_cell = bits_per_cell
         self.frame = None
         self.interupted = False
 
-        self.aruco_frame = create_aruco_marker_frame()
+        # Dimensions
+        self.width = width
+        self.height = height
+        self.rows = rows
+        self.columns = columns
+
+        # Initialize classes
+        self.create_frame = Create_frame(self.width, self.height, self.color_map)
+        self.encode = Encode(self.rows, self.columns)
+
+        self.aruco_frame = self.create_frame.aruco_marker()
 
 
     # --- Helper method ---
@@ -85,7 +102,7 @@ class sender:
             None
         """
 
-        self.frame = create_frame_bgr(bgr, width, height)
+        self.frame = self.create_frame.bgr(bgr, width, height)
         self.frame_with_margin()
 
         self.timer = time.time()
@@ -112,7 +129,7 @@ class sender:
             None
         """
 
-        self.frame = create_bitgrid_frame(self.bitgrid, width, height)
+        self.frame = self.create_frame.bitgrid(self.bitgrid, width, height)
         self.frame_with_margin()
 
         self.timer = time.time()
@@ -152,7 +169,7 @@ class sender:
 
         # A green frame to signal the end of the message
 
-        self.frame = create_frame_bgr(green_bgr, width, height)
+        self.frame = self.create_frame.bgr(green_bgr)
         self.frame_with_margin()
 
         self.timer = time.time()
@@ -169,34 +186,40 @@ class sender:
 
     def bit_phase(self):
 
+        frame_bit_arrays = self.encode.message_to_bit_arrays(self.message, self.bits_per_cell) # Converts the message to frame bit arrays
+        blue_frame = self.create_frame.bgr(blue_bgr)
+
+        encoded_frames = []
+
+        for frame_bit_array in frame_bit_arrays: # For each frame bit array:
+            encoded_frame = (frame_bit_array) # Encoded the frame
+            encoded_frames.append(encoded_frame) # Add the encoded frame to the list of encoded frames
+
         # The actual bits
-        for character in self.message:
+        for frame in encoded_frames: # For each frame:
 
-            bits = format(ord(character), "08b")
-            
-            if len(self.bitgrid) < 8:
-                self.bitgrid.append(bits)
-            else:
-                self.bitgrid_frames(self.bit_time)
-                self.bitgrid = []
+            frame_start_time = time.time() # Records the start time for the current frame
+            while time.time() - frame_start_time < self.bit_time: # While the frame duration limit hasn't been reached:
+                cv2.imshow(window, frame) # Display the current frame in the window
 
-            # Sync frame in between each bit
-            self.bit_frames(blue_bgr, self.bit_time)
+                if cv2.waitKey(1) & 0xFF == ord("q"): # If "Q" is pressed:
+                    cv2.destroyAllWindows
+                    return # Exit the function
+                time.sleep(0.001) # Small sleep to prevent high CPU usage
 
-            if self.interupted:
-                cv2.destroyAllWindows
-                print("[INFO] Interupted")
-                return
-            
-        if len(self.bitgrid) > 0:
-            while len(self.bitgrid) < 8:
-                self.bitgrid.append("00000000")
-            self.bitgrid_frames(self.bit_time)
+            blue_frame_time = time.time()
+            while time.time() - blue_frame_time < self.bit_time:
+                cv2.imshow(window, blue_frame)
+
+                if cv2.waitKey(1) & 0xFF == ord("q"): # If "Q" is pressed:
+                    cv2.destroyAllWindows
+                    return # Exit the function
+                time.sleep(0.001) # Small sleep to prevent high CPU usage
 
 
     # --- Main method ---
 
-    def crypted_message(self):
+    def encrypted_message(self):
         """
         Runs a series of shifting colors to be intepreted to bits
         by using openCV and imshow
@@ -216,7 +239,7 @@ class sender:
 if __name__ == "__main__":
 
     recorder = ScreenRecorder("recordings/sender_v3.mp4", 30)
-    recorder.start()
+    #recorder.start()
 
     window = "sender"
     cv2.namedWindow(window, cv2.WINDOW_NORMAL)
@@ -224,6 +247,6 @@ if __name__ == "__main__":
 
     # Runs the sender for receiever version 1
     sender_ = sender("HELLO, THIS IS A MESSAGE!")
-    sender_.crypted_message()
+    sender_.encrypted_message()
 
-    recorder.stop()
+    #recorder.stop()

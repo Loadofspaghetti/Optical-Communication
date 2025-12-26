@@ -111,7 +111,7 @@ class sender:
 
     # --- Main method ---
 
-    def crypted_message(self):
+    def encrypted_message(self):
         """
         Runs a series of shifting colors to be intepreted to bits
         by using openCV and imshow
@@ -139,6 +139,6 @@ if __name__ == "__main__":
 
     # Runs the sender for receiever version 1
     sender_ = sender()
-    sender_.crypted_message()
+    sender_.encrypted_message()
 
     recorder.stop()
