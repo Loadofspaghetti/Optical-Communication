@@ -5,7 +5,7 @@ import time
 import numpy as np
 
 from utils.global_definitions import (
-    green_bgr,
+    green_bgr, red_bgr, blue_bgr, yellow_bgr, cyan_bgr, magenta_bgr, orange_bgr,
     color_map_1bit,
     width, height, rows, columns,
     small_aruco_side_length, aruco_marker_dictionary, aruco_marker_ids
@@ -93,6 +93,40 @@ class Create_frame:
             frame[y_coordinate:y_coordinate + small_aruco_side_length, x_coordinate:x_coordinate + small_aruco_side_length] = marker_bgr
 
         return frame
+    
+
+    def color_reference(self):
+    
+        """
+        Creates a reference frame with all key colors for the receiver to calibrate.
+
+        Arguments: 
+            None
+        
+        Returns:
+            color_reference_frame (np.ndarray): The reference frame (BGR).
+
+        """
+
+        color_reference_frame = np.zeros((self.height, self.width, 3), dtype = np.uint8) # Creates a blank frame
+
+        colors = [red_bgr, green_bgr, blue_bgr, yellow_bgr, cyan_bgr, magenta_bgr, orange_bgr]
+
+        stripe_width = self.width // len(colors) # Divides the frame into equal vertical stripes for each color
+
+        for stripe_index, color in enumerate(colors):
+
+            x_start = stripe_index * stripe_width
+
+            if stripe_index != len(colors) - 1: # If the stripe index isn't the last one:
+                x_end = (stripe_index + 1) * stripe_width
+            
+            else: # Else (if it's the last one):
+                x_end = self.width
+
+            color_reference_frame[:, x_start:x_end] = color # Fill the entire stripe with the current color
+
+        return color_reference_frame
 
 create_frame = Create_frame()
 
