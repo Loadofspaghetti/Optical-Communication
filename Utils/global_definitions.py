@@ -41,6 +41,9 @@ height = 1080
 
 margin = 15
 
+rows = 8
+columns = 8
+
 # --- ArUco marker definitions ---
 
 aruco_marker_dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)

@@ -31,6 +31,18 @@ def create_frame_bgr(bgr, width, height):
 
     return color_frame
 
+def create_bitgrid_frame(bitgrid, width, height):
+
+    cell_row = 0
+    cell_col = 0
+
+    
+
+    for byte in bitgrid:
+        for bit in byte:
+
+
+
 def create_aruco_marker_frame():
 
     """
