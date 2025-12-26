@@ -192,7 +192,7 @@ class sender:
         encoded_frames = []
 
         for frame_bit_array in frame_bit_arrays: # For each frame bit array:
-            encoded_frame = (frame_bit_array) # Encoded the frame
+            encoded_frame = self.create_frame.bitgrid(frame_bit_array) # Encoded the frame
             encoded_frames.append(encoded_frame) # Add the encoded frame to the list of encoded frames
 
         # The actual bits
