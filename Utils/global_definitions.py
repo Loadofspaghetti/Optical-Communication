@@ -102,6 +102,8 @@ columns = 8
 bits_per_cell = 1
 number_of_colors = 2 ** bits_per_cell 
 
+decode_bit_steps = 4
+
 # --- ArUco marker definitions ---
 
 aruco_marker_dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)

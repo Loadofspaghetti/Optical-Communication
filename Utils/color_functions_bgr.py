@@ -1,7 +1,6 @@
-# utils/color_functions.py
+# utils/color_functions_bgr.py
 
 import cv2
-import numpy as np
 
 from collections import Counter
 
@@ -45,7 +44,7 @@ class Average_calc:
     def reset(self):
         self.frames = []
 
-# Initialized class
+# Initialize class
 average = Average_calc()
 
 def dominant_color(frame):
