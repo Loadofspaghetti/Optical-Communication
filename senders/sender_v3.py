@@ -54,13 +54,14 @@ class sender:
     def phase(self, which_phase):
         getattr(self, which_phase)()
 
-    def frame_with_margin(self, margin=margin):
+    @staticmethod
+    def frame_with_margin(frame, margin=margin):
         """
         Places `frame` inside a full-screen background with a fixed pixel margin.
         If the frame is too big to fit with the margin, it will be scaled down
         while preserving aspect ratio.
         """
-        fh, fw = self.frame.shape[:2]
+        fh, fw = frame.shape[:2]
 
         # Compute available area inside the margin
         available_w = width - 2 * margin
@@ -74,7 +75,7 @@ class sender:
 
         # Resize frame if needed
         if scale < 1.0:
-            self.frame = cv2.resize(self.frame, (new_w, new_h), interpolation=cv2.INTER_NEAREST)
+            frame = cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_NEAREST)
 
         # Create background
         background = np.full((height, width, 3), gray_bgr, dtype=np.uint8)
@@ -84,9 +85,9 @@ class sender:
         y0 = (height - new_h) // 2
 
         # Place the frame
-        background[y0:y0+new_h, x0:x0+new_w] = self.frame
+        background[y0:y0+new_h, x0:x0+new_w] = frame
 
-        self.frame = background
+        return background
 
 
     def bit_frames(self, bgr, duration, width=width, height=height):
@@ -103,7 +104,7 @@ class sender:
         """
 
         self.frame = self.create_frame.bgr(bgr, width, height)
-        self.frame_with_margin()
+        self.frame = self.frame_with_margin(self.frame)
 
         self.timer = time.time()
         while time.time() - self.timer < duration:
@@ -130,7 +131,7 @@ class sender:
         """
 
         self.frame = self.create_frame.bitgrid(self.bitgrid, width, height)
-        self.frame_with_margin()
+        self.frame = self.frame_with_margin(self.frame)
 
         self.timer = time.time()
         while time.time() - self.timer < duration:
@@ -151,7 +152,7 @@ class sender:
         # and to signal the beginning of the message
 
         self.frame = self.aruco_frame
-        self.frame_with_margin()
+        self.frame = self.frame_with_margin(self.frame)
 
         self.timer = time.time()
         while time.time() - self.timer < self.start_time:
@@ -170,7 +171,7 @@ class sender:
         # A green frame to signal the end of the message
 
         self.frame = self.create_frame.bgr(green_bgr)
-        self.frame_with_margin()
+        self.frame = self.frame_with_margin(self.frame)
 
         self.timer = time.time()
         while time.time() - self.timer < self.start_time:
@@ -188,6 +189,7 @@ class sender:
 
         frame_bit_arrays = self.encode.message_to_bit_arrays(self.message, self.bits_per_cell) # Converts the message to frame bit arrays
         blue_frame = self.create_frame.bgr(blue_bgr)
+        blue_frame = self.frame_with_margin(blue_frame)
 
         encoded_frames = []
 
@@ -197,6 +199,7 @@ class sender:
 
         # The actual bits
         for frame in encoded_frames: # For each frame:
+            frame = self.frame_with_margin(frame)
 
             frame_start_time = time.time() # Records the start time for the current frame
             while time.time() - frame_start_time < self.bit_time: # While the frame duration limit hasn't been reached:
@@ -239,7 +242,7 @@ class sender:
 if __name__ == "__main__":
 
     recorder = ScreenRecorder("recordings/sender_v3.mp4", 30)
-    #recorder.start()
+    recorder.start()
 
     window = "sender"
     cv2.namedWindow(window, cv2.WINDOW_NORMAL)
@@ -249,4 +252,4 @@ if __name__ == "__main__":
     sender_ = sender("HELLO, THIS IS A MESSAGE!")
     sender_.encrypted_message()
 
-    #recorder.stop()
+    recorder.stop()
