@@ -34,58 +34,13 @@ class Bitgrid:
         self.LUT = None
         self.color_names = None
 
+    def colors(self, LUT, color_names):
+        self.LUT = LUT
+        self.color_names = color_names
+
 
     # --- Helper Methods ---
 
-    @njit(parallel = True)
-    def bitgrid_majority_calculator(patch_class_array, number_of_classes):
-
-        """
-        Aggregates patches of class labels for each cell in a grid and assigns the cell its most frequently occurring label.
-
-        Arguments:
-            "patch_class_array": A 5-dimensional array (tensor).
-            "number_of_classes": The total number of distinct class labels that "patch_class_array" can contain.
-        
-        Returns:
-            "out": A grid of majority labels.
-
-        """
-
-        number_of_frames, number_of_grid_rows, patch_heights, number_of_grid_columns, patch_widths = patch_class_array.shape # Extracts the five dimensions of "patch_class_array"
-
-        out = np.empty((number_of_grid_rows, number_of_grid_columns), dtype = np.int32) # Creates an empty integer array to store the majority class for each grid coordinate
-
-        for row in prange(number_of_grid_rows): # For each row:
-
-            for column in range(number_of_grid_columns): # For each column:
-
-                counts = np.zeros(number_of_classes, dtype = np.int32) # Create a histogram array to accumulate how often each class appears in the cell region
-
-                for sample in range(number_of_frames): # For each frame:
-
-                    for patch_height in range(patch_heights): # Loop over the patch height:
-
-                        for patch_width in range(patch_widths): # Loop over the patch width:
-
-                            class_id = patch_class_array[sample, row, patch_height, column, patch_width] # Extract the class ID at these coordinates
-
-                            if 0 <= class_id < number_of_classes: # If the class ID number is within the given class ID range
-                                counts[class_id] += 1 # Increase the counter for that class ID
-
-                majority_class_id = 0 # Initialize the majority class id as 0
-                majority_class_count = counts[majority_class_id] # Initializes the majority class value
-
-                for class_id_index in range(1, number_of_classes): # Argmax to find the class with the highest frequency
-
-                    if counts[class_id_index] > majority_class_count:
-                        majority_class_id = class_id_index
-                        majority_class_count = counts[class_id_index]
-
-                out[row, column] = majority_class_id # Assign the majority class to the output grid
-
-        return out
-    
 
     def _pad_frames(self, frames):
 
@@ -116,13 +71,13 @@ class Bitgrid:
 
     def decode_bits(self):
 
-        if len(self.hsv_frames) == 0:
+        if len(self.frames) == 0:
             return None
 
-        hsv_frames = np.asarray(self.hsv_frames)
-        self.hsv_frames = []
+        frames = np.asarray(self.frames)
+        self.frames = []
 
-        padded_frames, self.cell_h, self.cell_w = self._pad_frames(hsv_frames)
+        padded_frames, self.cell_h, self.cell_w = self._pad_frames(frames)
 
         N, _, _, _ = padded_frames.shape
 
@@ -150,7 +105,7 @@ class Bitgrid:
         merged = classes
 
         number_of_classes = int(self.LUT.max()) + 1
-        bitgrid = self.bitgrid_majority_calculator(merged, number_of_classes)
+        bitgrid = bitgrid_majority_calculator(merged, number_of_classes)
 
         black_idx = 1
         bitgrid_str = np.where(bitgrid == black_idx, "0", "1")
@@ -163,6 +118,56 @@ class Bitgrid:
 
 
 bitgrid = Bitgrid()
+
+@njit(parallel = True)
+def bitgrid_majority_calculator(patch_class_array, number_of_classes):
+
+    """
+    Aggregates patches of class labels for each cell in a grid and assigns the cell its most frequently occurring label.
+
+    Arguments:
+        "patch_class_array": A 5-dimensional array (tensor).
+        "number_of_classes": The total number of distinct class labels that "patch_class_array" can contain.
+    
+    Returns:
+        "out": A grid of majority labels.
+
+    """
+
+    number_of_frames, number_of_grid_rows, patch_heights, number_of_grid_columns, patch_widths = patch_class_array.shape # Extracts the five dimensions of "patch_class_array"
+
+    out = np.empty((number_of_grid_rows, number_of_grid_columns), dtype = np.int32) # Creates an empty integer array to store the majority class for each grid coordinate
+
+    for row in prange(number_of_grid_rows): # For each row:
+
+        for column in range(number_of_grid_columns): # For each column:
+
+            counts = np.zeros(number_of_classes, dtype = np.int32) # Create a histogram array to accumulate how often each class appears in the cell region
+
+            for sample in range(number_of_frames): # For each frame:
+
+                for patch_height in range(patch_heights): # Loop over the patch height:
+
+                    for patch_width in range(patch_widths): # Loop over the patch width:
+
+                        class_id = patch_class_array[sample, row, patch_height, column, patch_width] # Extract the class ID at these coordinates
+
+                        if 0 <= class_id < number_of_classes: # If the class ID number is within the given class ID range
+                            counts[class_id] += 1 # Increase the counter for that class ID
+
+            majority_class_id = 0 # Initialize the majority class id as 0
+            majority_class_count = counts[majority_class_id] # Initializes the majority class value
+
+            for class_id_index in range(1, number_of_classes): # Argmax to find the class with the highest frequency
+
+                if counts[class_id_index] > majority_class_count:
+                    majority_class_id = class_id_index
+                    majority_class_count = counts[class_id_index]
+
+            out[row, column] = majority_class_id # Assign the majority class to the output grid
+
+    return out
+
 
 def dominant_color_hsv(hsv):
 
@@ -190,6 +195,55 @@ def dominant_color_hsv(hsv):
     else:
         return names
     
+
+def build_color_LUT(corrected_ranges):
+
+    """
+    Build a 180 x 256 x 256 LUT mapping HSV -> class index. Class indices follow the order of corrected_ranges keys.
+
+    Arguments:
+        "corrected_ranges"
+
+    Returns:
+        "LUT"
+        "color_names"
+
+    """
+
+    color_names = list(corrected_ranges.keys())
+
+    LUT = np.zeros((180, 256, 256), dtype = np.uint8)
+
+    H = np.arange(180)[:, None, None]
+    S = np.arange(256)[None, :, None]
+    V = np.arange(256)[None, None, :]
+
+    H = np.broadcast_to(np.arange(180, dtype = np.uint16)[:,None,None], (180,256,256))
+    S = np.broadcast_to(np.arange(256, dtype = np.uint16)[None,:,None], (180,256,256))
+    V = np.broadcast_to(np.arange(256, dtype = np.uint16)[None,None,:], (180,256,256))
+
+    for idx, (_, (lower, upper)) in enumerate(corrected_ranges.items()):
+
+        lh, ls, lv = lower
+        uh, us, uv = upper
+
+        if lh <= uh:
+            mask = (
+                (H >= lh) & (H <= uh) &
+                (S >= ls) & (S <= us) &
+                (V >= lv) & (V <= uv)
+)
+
+        else:
+            mask = (
+                ((H >= lh) | (H <= uh)) &
+                (S >= ls) & (S <= us) &
+                (V >= lv) & (V <= uv)
+)
+
+        LUT[mask] = idx
+
+    return LUT, color_names
 
 
 def range_calibration(roi):

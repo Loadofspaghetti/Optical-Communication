@@ -3,10 +3,14 @@
 import cv2
 import numpy as np
 import time
+import queue
+import threading
 
 from webcam_simulation.threaded_webcam import threaded_webcam
-from utils.color_functions import dominant_color, average
+from utils.color_functions_bgr import dominant_color
+from utils.color_functions_hsv import build_color_LUT, bitgrid, bitgrid_majority_calculator
 from utils.screen_alignment import homography_from_small_arucos, warp_alignment
+from utils import decoding_functions
 
 from utils.global_definitions import (
     blue_bgr, green_bgr, red_bgr, black_bgr, white_bgr,
@@ -14,6 +18,71 @@ from utils.global_definitions import (
     aruco_detector_parameters, aruco_marker_dictionary
 )
 
+# Global definitions
+decoded_message = ""
+
+
+class Threads:
+
+    def __init__(self):
+        self.frame_queue = queue.Queue(maxsize=100)
+        self.last_queue_debug = 0
+        self.decode_last_time = time.time()
+        self.decoded_message = ""
+        self.stop_thread = False
+        self.watchdog_on = False
+
+        # Start decoding thread
+        decode_thread = threading.Thread(target=self.decoding_worker, daemon=True)
+        decode_thread.start()
+
+        # Start watchdog thread
+        watch_thread = threading.Thread(target=self.watchdog, daemon=True)
+        watch_thread.start()
+
+
+    def decoding_worker(self):
+
+        global decoded_message
+
+        while not self.stop_thread or not self.frame_queue.empty():
+            try:
+                hsv_roi, recall, add_frame, end_frame = self.frame_queue.get(timeout=0.1)
+            except queue.Empty:
+                continue
+
+            now = time.time()
+            if now - self.last_queue_debug > 0.5:
+                print(f"[DEBUG] Decode thread queue size = {self.frame_queue.qsize()}")
+                self.last_queue_debug = now
+            
+            t0 = time.time()
+            if recall:
+                decoded_message = decoding_functions.decode_bitgrid_hsv(
+                    hsv_roi, add_frame, recall, end_frame
+                )
+            else:
+                decoding_functions.decode_bitgrid_hsv(
+                    hsv_roi, add_frame, recall, end_frame
+                )
+
+            self.decode_last_time = time.time()  # helps watchdog to see if decode works or not
+
+
+            t1 = time.time()
+
+            # Print timing occasionally
+            if t1 - self.last_queue_debug > 0.5:
+                print(f"[DEBUG] Decode time: {(t1 - t0)*1000:.2f} ms")
+
+
+    def watchdog(self):
+        while self.watchdog_on:
+            if time.time() - self.decode_last_time > 1.0:
+                print("[WARNING] Decode thread is stalled or starving (no frames processed)!")
+            time.sleep(0.2)
+
+    
 
 class receiver:
 
@@ -35,7 +104,6 @@ class receiver:
         self.byte = ""
 
         self.message = ""
-        self.decoded_message = ""
 
         # Coordinates
         self.frame_start_x_roi = width//2 - 25
@@ -60,6 +128,9 @@ class receiver:
 
         # Matrix
         self.homography = None
+
+        # Initialize Threads class
+        self.threads = Threads()
         
     
     def aruco_sync(self):
@@ -109,50 +180,35 @@ class receiver:
             None
         """
 
+        recall = False
+        end_frame = False
+        add_frame = False
+
+        if self.color == "blue" and self.last_color != "blue":
+            
+            end_frame = True
+            add_frame = True
+
+        elif self.color in ["white", "black"]:
+            
+            # add_frame → add frame to array
+
+            add_frame = True
+
+        elif self.color == "green" and self.last_color != "green":
+
+            recall = True
+
+        try:
+            self.warped = cv2.cvtColor(self.warped, cv2.COLOR_BGR2HSV)
+            self.threads.frame_queue.put_nowait((self.warped.copy(), recall, add_frame, end_frame))
+        except queue.Full:
+            pass  # skip if queue is full
+
         # When the decoding is complete switch to decoding message
         if self.color == "green":
-            print("[INFO] Green detected, message complete")
-            self.decoded_message = self.message
-
-        # Grabs the average color
-        if self.color == "blue" and self.last_color != "blue":
-
-            average_color = average.majority()
-            assert average_color == "white" or average_color == "black", \
-                "No black or white found, out of sync..."
-                        
-            if average_color == "white":
-                self.bits += "1"
-
-            elif average_color == "black":
-                self.bits += "0"
-
-        # Puts the black/white frames inside ann array
-        elif self.color == "black" or self.color == "white":
-            average.add_frame(self.roi)
-
-        # End-of-character marker
-        elif self.color == "red" and self.last_color != "red":
-            
-            # Decode only FULL bytes
-            while len(self.bits) >= 8:
-                self.byte = self.bits[:8]
-                self.bits = self.bits[8:]
-
-                try:
-                    ch = chr(int(self.byte, 2))
-
-                except ValueError:
-                    ch = '?'
-
-                self.message += ch
-                print(f"Received char: {ch}")
-
-            if 0 < len(self.bits) < 8:
-                print(f"[WARNING] Dropping incomplete byte: {self.bits}")
-                self.bits = ""
-
-            self.bits = ""
+            #print("[INFO] Green detected, message complete")
+            return
 
 
     def default(self):
@@ -163,7 +219,7 @@ class receiver:
         # Function for easier handling of each state of the program by using getattr \
         # to find methods dynamically by name
         # Using "()" at the end to call the method 
-        # If no method found then it returns default as a safefty net
+        # If no method found then it returns default as a safety net
         getattr(self, self.which_method, self.default)()
 
 
@@ -220,7 +276,7 @@ class receiver:
                 self.state()
 
             # If there is a decoded message available then break
-            if self.decoded_message:
+            if decoded_message:
                 break
             
             # When "q" is pressed then the code is interupted
@@ -230,11 +286,35 @@ class receiver:
                 return
 
             self.last_color = self.color
-        
-        return self.decoded_message
+    
+
+def initialize_LUT():
+    # Color ranges
+    original_hsv_ranges = { 
+        "white": ([0, 0, 150], [179, 40, 255]),
+        "black": ([0, 0, 0], [179, 255, 50]), 
+        "red": ([0, 40, 60], [10, 255, 255]),
+        "green": ([40, 40, 60], [80, 255, 255]), 
+        "blue": ([100, 40, 60], [140, 255, 255]),
+        "yellow":([20, 40 ,60],[40, 255,255]),
+        "cyan": ([80, 40, 60],[100, 255,255]),
+        "magenta":([140, 40,60],[160,255,255]), 
+        "orange": ([10, 40, 60],[20, 255, 255])
+    }
+
+    # Initialize LUT
+    LUT, color_names = build_color_LUT(original_hsv_ranges)
+    bitgrid.colors(LUT, color_names)
+
+def warmup_all():
+    dummy_array = np.zeros((2, 2, 8, 16, 10), dtype = np.uint8)
+    bitgrid_majority_calculator(dummy_array, 5)
 
 
 if __name__ == "__main__":
+
+    initialize_LUT()
+    warmup_all()
 
     video_path = "recordings/sender_v3.mp4"
 
@@ -261,7 +341,7 @@ if __name__ == "__main__":
         time.sleep(0.01)
     
     receiver_ = receiver(video_cap)
-    decoded_message = receiver_.decrypt_message()
+    receiver_.decrypt_message()
 
     cv2.destroyAllWindows()
     print(f"[COMPLETE] The final message: {decoded_message}")

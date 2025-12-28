@@ -34,6 +34,29 @@ green_upper_hsv_limit = (80, 255, 255)
 blue_lower_hsv_limit = (100, 150, 0)
 blue_upper_hsv_limit = (140, 255, 255)
 
+# --- HCV definitions ---
+
+red_lower_hcv_limit_1 = (0, 100, 100)
+red_upper_hcv_limit_1 = (10, 255, 255)
+red_lower_hcv_limit_2 = (160, 100, 100)
+red_upper_hcv_limit_2 = (179, 255, 255)
+
+white_lower_hcv_limit = (0, 0, 200)
+white_upper_hcv_limit = (180, 50, 255)
+
+black_lower_hcv_limit = (0, 0, 0)
+black_upper_hcv_limit = (180, 255, 50)
+
+green_lower_hcv_limit = (40, 50, 50)
+green_upper_hcv_limit = (80, 255, 255)
+
+blue_lower_hcv_limit = (100, 150, 0)
+blue_upper_hcv_limit = (140, 255, 255)
+
+delta_h = 5
+delta_c = 15
+delta_v = 15
+
 # --- Color maps ---
 """
 Maps the color to its relative bits
@@ -103,6 +126,7 @@ bits_per_cell = 1
 number_of_colors = 2 ** bits_per_cell 
 
 decode_bit_steps = 4
+dominant_color_steps = 4
 
 # --- ArUco marker definitions ---
 
