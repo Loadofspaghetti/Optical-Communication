@@ -138,3 +138,11 @@ large_aruco_side_length_without_margin = height
 aruco_marker_ids = [0, 1, 3, 2]
 
 aruco_marker_frame_duration = 1
+
+# --- Sync definitions ---
+
+number_of_sync_frames = 10
+
+sync_colors = [black_bgr, white_bgr]
+
+sync_frame_duration = 0.3
