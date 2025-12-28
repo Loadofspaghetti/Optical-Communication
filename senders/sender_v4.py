@@ -193,7 +193,7 @@ class sender:
         self.frame = self.frame_with_margin(self.frame)
 
         self.timer = time.time()
-        while time.time() - self.timer < 1:
+        while time.time() - self.timer < 3:
             cv2.imshow(window, self.frame)
 
             if cv2.waitKey(1) & 0xFF == ord("q"):

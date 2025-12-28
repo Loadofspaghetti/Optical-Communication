@@ -258,7 +258,7 @@ def range_calibration(roi):
                             "magenta":([140, 40,60],[160,255,255]), 
                             "orange": ([10, 40, 60],[20, 255, 255])}
 
-    roi_hcv = cv2.colorChange(roi, cv2.COLOR_BGR2HSV)
+    roi_hcv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 
     colors_to_calibrate = ["red", "green", "blue", "yellow", "cyan", "magenta", "orange"]
     stripe_width = roi.shape[1] // len(colors_to_calibrate)
