@@ -6,9 +6,11 @@ import numpy as np
 
 from utils.global_definitions import (
     green_bgr, red_bgr, blue_bgr, yellow_bgr, cyan_bgr, magenta_bgr, orange_bgr,
+    gray_bgr, 
     color_map_1bit,
     width, height, rows, columns,
-    small_aruco_side_length, aruco_marker_dictionary, aruco_marker_ids
+    small_aruco_side_length, large_aruco_side_length,
+    aruco_marker_dictionary, aruco_marker_ids
 )
 
 class Create_frame:
@@ -95,6 +97,47 @@ class Create_frame:
         return frame
     
 
+    def large_aruco_marker(self, position="right"):
+    
+        """
+        Creates a gray frame with a single large ArUco marker on the left or right.
+
+        Arguments:
+            position (str): "right" or "left" side for the marker (default "right").
+
+        Returns:
+            np.ndarray: The frame with the large ArUco marker.
+            
+        """
+
+        frame = self.bgr(gray_bgr)
+
+        y_coordinate = 0
+
+        if position == "right":
+            x_coordinate = self.width - large_aruco_side_length
+
+        elif position == "left":
+            x_coordinate = 0
+
+        else:
+            raise ValueError("position must be 'left' or 'right'")
+        
+        if position == "right":
+            aruco_marker_id = aruco_marker_ids[0]
+
+        else:
+            aruco_marker_id = aruco_marker_ids[1]
+
+        marker = cv2.aruco.generateImageMarker(aruco_marker_dictionary, aruco_marker_id, large_aruco_side_length)
+        marker_bgr = cv2.cvtColor(marker, cv2.COLOR_GRAY2BGR)
+
+        frame[y_coordinate:y_coordinate + large_aruco_side_length, 
+            x_coordinate:x_coordinate + large_aruco_side_length] = marker_bgr
+
+        return frame
+    
+
     def color_reference(self):
     
         """
@@ -131,18 +174,5 @@ class Create_frame:
 create_frame = Create_frame()
 
 if __name__ == "__main__":
-
-    bitgrid = [
-        ["10011001"],
-        ["10011001"],
-        ["10011001"],
-        ["10011001"],
-        ["10011001"],
-        ["10011001"],
-        ["10011001"],
-        ["10011001"],
-    ]
-
-    display = create_bitgrid_frame(bitgrid, width, height)
-
-    cv2.imwrite("optical-communication/utils/Test.png", display)
+    """
+    """

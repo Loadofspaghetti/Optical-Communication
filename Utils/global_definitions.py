@@ -134,7 +134,7 @@ aruco_marker_dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_5
 aruco_detector_parameters = cv2.aruco.DetectorParameters()
 
 small_aruco_side_length = height//5
-large_aruco_side_length_without_margin = height
+large_aruco_side_length = height
 aruco_marker_ids = [0, 1, 3, 2]
 
 aruco_marker_frame_duration = 1
