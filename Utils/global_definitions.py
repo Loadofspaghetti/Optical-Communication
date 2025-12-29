@@ -146,3 +146,12 @@ number_of_sync_frames = 10
 sync_colors = [black_bgr, white_bgr]
 
 sync_frame_duration = 0.3
+
+# --- Message ---
+
+message = "In the beginning was the Word, and the Word was with God, and the Word was God. \
+The same was in the beginning with God. \
+All things were made by him; and without him was not any thing made that was made. \
+In him was life; and the life was the light of men. \
+And the light shineth in darkness; and the darkness comprehended it not. \
+There was a man sent from God, whose name was John."

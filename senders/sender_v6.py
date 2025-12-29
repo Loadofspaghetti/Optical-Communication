@@ -12,7 +12,7 @@ from utils.global_definitions import (
     red_bgr, green_bgr, blue_bgr, white_bgr, black_bgr,
     gray_bgr, color_map_1bit, bits_per_cell,
     sync_colors, number_of_sync_frames, sync_frame_duration,
-    width, height, margin, rows, columns
+    width, height, margin, rows, columns, message
 )
 
 
@@ -236,7 +236,7 @@ if __name__ == "__main__":
     cv2.setWindowProperty(window, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN) # Sets the window to fullscreen
 
     # Runs the sender for receiever version 1
-    sender_ = sender("HELLO, THIS IS A MESSAGE!")
+    sender_ = sender(message)
     sender_.encrypted_message()
 
     recorder.stop()

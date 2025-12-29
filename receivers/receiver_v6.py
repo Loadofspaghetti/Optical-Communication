@@ -130,7 +130,7 @@ class receiver:
         self.is_decoding_started = False
         self.is_arucos_found = False
         self.is_colors_calibrated = False
-        self.is_syncing = False
+        self.is_syncing = True
         self.is_syncing_initialized = False
 
         # Matrix
@@ -203,10 +203,10 @@ class receiver:
         if self.color in ["black", "white"]: # If we're syncing:
                         
             if not self.is_syncing_initialized:
-
                 print("\n[INFO] Trying to sync and get the interval...")
                 self.is_syncing_initialized = True
-
+            
+        if self.is_syncing:
             try:
                 self.interval, self.is_syncing = decoding_functions.sync_interval_detector(self.color, True) # Try to sync and get the interval
 
@@ -214,7 +214,7 @@ class receiver:
                 print("\n[WARNING] Sync error:", e)
                 self.is_syncing = False
             
-        if self.is_syncing == False and self.color != "blue" and self.last_color == "blue":
+        elif self.color != "blue" and self.last_color == "blue":
             print(f"\n[INFO] Interval: {self.interval} s")
             print("[INFO] Syncing complete, switching to decoding...")
             self.which_method = "decoding_bits"
