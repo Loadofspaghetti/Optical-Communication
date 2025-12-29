@@ -12,7 +12,7 @@ import time
 
 from utils.color_functions_hsv import bitgrid as calc_bitgrid_hsv
 from utils.global_definitions import(
-    rows, columns,
+    rows, columns, number_of_sync_frames,
     bits_per_cell
 )
 

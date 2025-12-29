@@ -176,8 +176,6 @@ class sender:
     def bit_phase(self):
 
         frame_bit_arrays = self.encode.message_to_bit_arrays(self.message, self.bits_per_cell) # Converts the message to frame bit arrays
-        blue_frame = self.create_frame.bgr(blue_bgr)
-        blue_frame = self.frame_with_margin(blue_frame)
 
         encoded_frames = []
 
@@ -192,15 +190,6 @@ class sender:
             frame_start_time = time.time() # Records the start time for the current frame
             while time.time() - frame_start_time < self.bit_time: # While the frame duration limit hasn't been reached:
                 cv2.imshow(window, frame) # Display the current frame in the window
-
-                if cv2.waitKey(1) & 0xFF == ord("q"): # If "Q" is pressed:
-                    cv2.destroyAllWindows
-                    return # Exit the function
-                time.sleep(0.001) # Small sleep to prevent high CPU usage
-
-            blue_frame_time = time.time()
-            while time.time() - blue_frame_time < self.bit_time:
-                cv2.imshow(window, blue_frame)
 
                 if cv2.waitKey(1) & 0xFF == ord("q"): # If "Q" is pressed:
                     cv2.destroyAllWindows
