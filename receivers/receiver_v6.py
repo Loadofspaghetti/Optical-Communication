@@ -1,4 +1,4 @@
-# receivers/receiver_v5.py
+# receivers/receiver_v6.py
 
 import cv2
 import numpy as np
@@ -9,7 +9,7 @@ import threading
 from webcam_simulation.threaded_webcam import threaded_webcam
 from utils.color_functions_bgr import dominant_color
 from utils.color_functions_hsv import build_color_LUT, bitgrid, bitgrid_majority_calculator, range_calibration
-from utils.screen_alignment import homography_from_small_arucos, warp_alignment
+from utils.screen_alignment import homography_from_large_markers, warp_alignment
 from utils import decoding_functions
 
 from utils.global_definitions import (
@@ -153,7 +153,7 @@ class receiver:
             gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
             corners, ids, rejected = self.aruco_detector.detectMarkers(gray)
             
-            self.homography, self.src_pts = homography_from_small_arucos(corners, ids, width//4, height//4)
+            self.homography, self.src_pts = homography_from_large_markers(corners, ids, width//4, height//4)
 
             self.warped_start_x_roi = width//8 - 25
             self.warped_start_y_roi = height//8 - 25
@@ -352,7 +352,7 @@ def warmup_all():
 
 if __name__ == "__main__":
 
-    video_path = "recordings/sender_v5.mp4"
+    video_path = "recordings/sender_v6.mp4"
 
     video_cap = threaded_webcam(video_path, False, True)
 

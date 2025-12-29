@@ -85,6 +85,74 @@ def homography_from_small_arucos(corners, marker_ids, width=width, height=height
     return H, src_pts
 
 
+def homography_from_large_markers(corners, marker_ids, width=width, height=height):
+    """
+    Computes a homography using two large ArUco markers.
+
+    Arguments:
+        corners      : ArUco corners from OpenCV
+        marker_ids   : detected marker IDs
+        frame        : image (used only for safety checks)
+
+    Returns:
+        H             : 3x3 homography matrix or None
+    """
+
+    global saved_corners
+
+    H = None
+
+    # Normalize marker_ids
+    if hasattr(marker_ids, "flatten"):
+        ids_flat = marker_ids.flatten()
+    else:
+        ids_flat = np.array(marker_ids).flatten()
+
+    # Build ID → corners mapping
+    id_to_corners = {}
+    for idx, marker_id in enumerate(ids_flat):
+        id_to_corners[int(marker_id)] = corners[idx][0]
+
+    # Persist only markers 0 and 1
+    for marker_id in [0, 1]:
+        if marker_id in id_to_corners:
+            saved_corners[marker_id] = id_to_corners[marker_id]
+
+    # Require both markers
+    if saved_corners[0] is None or saved_corners[1] is None:
+        return None, None
+
+    # Select source points (image)
+    # Order: TL, TR, BR, BL
+    left_marker  = saved_corners[1]
+    right_marker = saved_corners[0]
+
+    src_pts = np.array([
+        left_marker[0],   # TL
+        right_marker[1],  # TR
+        right_marker[2],  # BR
+        left_marker[3]    # BL
+    ], dtype=np.float32)
+
+    # Define destination rectangle
+    # (arbitrary units, consistent scale)
+
+    if width < 5 or height < 5:
+        return None, None
+
+    dst_pts = np.array([
+        [0, 0],
+        [width, 0],
+        [width, height],
+        [0, height]
+    ], dtype=np.float32)
+
+    # Compute homography
+    H, _ = cv2.findHomography(src_pts, dst_pts)
+
+    return H, src_pts
+
+
 def warp_alignment(frame, H, dst_width, dst_height):
     """
     Calculates the homography matrix based on the saved corners of the ArUco markers.
