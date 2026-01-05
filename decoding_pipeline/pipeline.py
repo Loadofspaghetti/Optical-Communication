@@ -141,24 +141,21 @@ class Pipeline_message:
 
     def stop_pipeline(self):
 
-        global _frame_queue, _command_queue, _bitgrid_queue, \
-               _message_queue, _stop_event
-
-        if _stop_event is None:
+        if self._stop_event is None:
             return
 
         # signal shutdown
-        _stop_event.set()
+        self._stop_event.set()
         # send explicit shutdown command
         try:
-            _command_queue.put_nowait(("shutdown", None))
+            self._command_queue.put_nowait(("shutdown", None))
         except:
             pass
 
         # send sentinels to queues to wake blocked gets
-        try: _frame_queue.put_nowait(None)
+        try: self._frame_queue.put_nowait(None)
         except: pass
-        try: _bitgrid_queue.put_nowait(None)
+        try: self._bitgrid_queue.put_nowait(None)
         except: pass
 
         # join processes only if started and alive
@@ -293,24 +290,21 @@ class Pipeline_audio:
 
     def stop_pipeline(self):
 
-        global _frame_queue, _command_queue, _bitgrid_queue, \
-               _message_queue, _stop_event
-
-        if _stop_event is None:
+        if self._stop_event is None:
             return
 
         # signal shutdown
-        _stop_event.set()
+        self._stop_event.set()
         # send explicit shutdown command
         try:
-            _command_queue.put_nowait(("shutdown", None))
+            self._command_queue.put_nowait(("shutdown", None))
         except:
             pass
 
         # send sentinels to queues to wake blocked gets
-        try: _frame_queue.put_nowait(None)
+        try: self._frame_queue.put_nowait(None)
         except: pass
-        try: _bitgrid_queue.put_nowait(None)
+        try: self._bitgrid_queue.put_nowait(None)
         except: pass
 
         # join processes only if started and alive
