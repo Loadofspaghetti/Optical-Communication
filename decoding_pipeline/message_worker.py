@@ -62,13 +62,16 @@ def message_worker(
 
         elif msg_bitgrid == "<FLUSH>":
             message_queue.put(message_buffer)
-            print(f"[Message] message complete, queue size: {message_queue.qsize()}")
+            print(f"[MESSAGE] message complete, queue size: {message_queue.qsize()}")
             message_buffer = ""   # reset ONLY after full flush
 
         elif msg_bitgrid == "<COMPLETE>":
             message_queue.put(message_buffer)
-            print(f"[Message] message flushed, queue size: {message_queue.qsize()}")
+            print(f"[MESSAGE] message flushed, queue size: {message_queue.qsize()}")
             message_buffer = ""   # reset ONLY after full message
+        elif msg_bitgrid == "shutdown":
+            print("[MESSAGE] Shutdown received.")
+            break
         
 
         # Update timestamp for watchdog
@@ -80,5 +83,7 @@ def message_worker(
             if decode_end - last_debug_print > 0.5:
                 print(f"[MESSAGE] Decode time: {(decode_end - decode_start) * 1000:.2f} ms")
                 last_debug_print = decode_end
+
+    print("[MESSAGE] Message worker exiting.", flush=True)
         
 

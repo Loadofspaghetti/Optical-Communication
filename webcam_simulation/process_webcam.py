@@ -98,6 +98,8 @@ def _reader_process(video_path, conn, latest_index, stop_flag, ready_event,
     next_frame_time = time.time() + frame_delay
     ready_event.set()
 
+    print(f"[WEBCAM] Reader process started, reading from: {video_path}", flush=True)
+
     try:
         while not stop_flag.value:
             now = time.time()
@@ -139,6 +141,8 @@ def _reader_process(video_path, conn, latest_index, stop_flag, ready_event,
         # Close local shm handles
         shm0.close()
         shm1.close()
+
+        print(f"[WEBCAM] Reader process exiting.", flush=True)
 
 
 class VideoProcessCapture:
@@ -231,38 +235,51 @@ class VideoProcessCapture:
         return self._is_opened and (not self._stop_flag.value)
 
     def release(self, wait=True, timeout=2.0):
-        """Stop the child process and cleanup shared memory."""
+        """
+        Stop the child process and clean up shared memory.
+
+        Guarantees:
+        - Stops the child process even if blocked on cap.read()
+        - Cleans up shared memory
+        - Prints shutdown confirmation
+        - Main thread never blocks indefinitely
+        """
         if not self._is_opened:
             return
 
-        # ask child to stop
+        print("[WEBCAM] Releasing video capture...", flush=True)
+
+        # Signal child to stop
         self._stop_flag.value = True
 
-        # wait for child process to exit
+        # Wait for child process to exit naturally
         if wait and self._proc.is_alive():
             self._proc.join(timeout)
             if self._proc.is_alive():
+                # Last-resort termination
+                print("[WEBCAM] Child process did not exit in time; terminating...", flush=True)
                 try:
                     self._proc.terminate()
                 except Exception:
                     pass
                 self._proc.join(0.5)
 
-        # Close and unlink shared memory (parent-owned cleanup)
-        try:
-            if hasattr(self, '_shm0') and self._shm0 is not None:
-                self._shm0.close()
-                self._shm0.unlink()
-        except Exception:
-            pass
-        try:
-            if hasattr(self, '_shm1') and self._shm1 is not None:
-                self._shm1.close()
-                self._shm1.unlink()
-        except Exception:
-            pass
+        # Clean up shared memory safely
+        for shm_attr in ["_shm0", "_shm1"]:
+            shm = getattr(self, shm_attr, None)
+            if shm is not None:
+                try:
+                    shm.close()
+                    shm.unlink()
+                except Exception:
+                    pass
 
+        # Mark as closed
         self._is_opened = False
+
+        # Guaranteed final print
+        print("[WEBCAM] Video capture fully released.", flush=True)
+
 
     # convenience context manager
     def __enter__(self):

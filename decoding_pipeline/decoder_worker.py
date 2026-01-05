@@ -113,6 +113,8 @@ def decoding_worker(
                 print(f"[WORKER] Decode time: {decode_time_ms:.2f} ms")
                 last_timing_debug_print = decode_end_time
 
+    print("[WORKER] Decoding worker exiting.", flush=True)
+
 def warmup_all():
 
     """

@@ -119,7 +119,7 @@ class Pipeline_message:
             target=watchdog,
             kwargs=dict(
                 last_decode_timestamp=self._last_decode_timestamp, 
-                stop_flag=self._stop_event, 
+                stop_event=self._stop_event, 
                 watchdog_on=False, 
                 stall_threshold=1.0
             ),
@@ -151,12 +151,18 @@ class Pipeline_message:
             self._command_queue.put_nowait(("shutdown", None))
         except:
             pass
+        try: 
+            self._bitgrid_queue.put_nowait(("shutdown", None))
+        except: 
+            pass
 
         # send sentinels to queues to wake blocked gets
         try: self._frame_queue.put_nowait(None)
         except: pass
         try: self._bitgrid_queue.put_nowait(None)
         except: pass
+
+        print("[INFO] stopping message pipeline processes")
 
         # join processes only if started and alive
         for proc, name in ((self._decode_process,"decode"), (self._message_process,"message"), (self._watchdog_process,"watchdog")):

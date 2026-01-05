@@ -297,11 +297,17 @@ class receiver:
             
             # When "q" is pressed then the code is interupted
             if cv2.waitKey(1) & 0xFF == ord("q"):
-                cv2.destroyAllWindows()
-                print("[INFO] Receiver interupted")
+                self.stop_receiver()
                 return None
 
             self.last_color = self.color
+
+    def stop_receiver(self):
+        print("[INFO] Receiver interrupted, shutting down pipeline")
+        pipeline.stop_pipeline()
+        cv2.destroyAllWindows()
+
+            
     
 
 def warmup_all():
@@ -368,8 +374,7 @@ if __name__ == "__main__":
     try:
         decoded_message = receiver_.decrypt_message()
     except KeyboardInterrupt:
-        print("[Main] Caught Ctrl+C — shutting down pipeline")
-        pipeline.stop_pipeline()
+        receiver_.stop_receiver()
 
     cv2.destroyAllWindows()
     print(f"[COMPLETE] The final message: {decoded_message}")
