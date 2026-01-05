@@ -1,5 +1,11 @@
 # receivers/receiver_v7.py
 
+import sys
+import os
+
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import cv2
 import numpy as np
 import time
@@ -25,7 +31,7 @@ from utils.global_definitions import (
 
 class receiver:
 
-    def __init__(self, video_cap):
+    def __init__(self, video_cap, shared=None):
 
         # Video capture (Grabbing frames)
         self.video_cap = video_cap
@@ -76,8 +82,8 @@ class receiver:
         # Matrix
         self.homography = None
 
-        # Initialize classes
-        self.shared = Shared()
+        # Initialize classes or use provided shared instance
+        self.shared = shared if shared is not None else Shared()
         
     
     def aruco_sync(self):
@@ -358,7 +364,7 @@ if __name__ == "__main__":
     # Start pipeline
     pipeline.start_pipeline(core_decode_worker=[4, 3, 2], core_message_worker=[5], core_watchdog=[6])
     
-    receiver_ = receiver(videoCapture)
+    receiver_ = receiver(videoCapture, shared=pipeline.shared)
     try:
         decoded_message = receiver_.decrypt_message()
     except KeyboardInterrupt:
