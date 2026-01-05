@@ -144,40 +144,31 @@ class Pipeline_message:
         if self._stop_event is None:
             return
 
-        # signal shutdown
+        # signal stop event
         self._stop_event.set()
-        # send explicit shutdown command
-        try:
-            self._command_queue.put_nowait(("shutdown", None))
-        except:
-            pass
-        try: 
-            self._bitgrid_queue.put_nowait(("shutdown", None))
-        except: 
-            pass
 
-        # send sentinels to queues to wake blocked gets
-        try: self._frame_queue.put_nowait(None)
-        except: pass
+        # send sentinels for workers (optional)
         try: self._bitgrid_queue.put_nowait(None)
         except: pass
+        try: self._message_queue.put_nowait(None)
+        except: pass
 
-        print("[INFO] stopping message pipeline processes")
+        # flush queues to remove leftover items
+        self.shared.flush_queue(self._bitgrid_queue)
+        self.shared.flush_queue(self._message_queue)
+        self.shared.flush_queue(self._frame_queue)
 
-        # join processes only if started and alive
-        for proc, name in ((self._decode_process,"decode"), (self._message_process,"message"), (self._watchdog_process,"watchdog")):
-            if proc is None:
-                print(f"[Pipeline] {name} process object is None — skipping join")
+        # join processes
+        for proc, name in [(self._decode_process,"decode"),
+                        (self._message_process,"message"),
+                        (self._watchdog_process,"watchdog")]:
+            if proc is None or not proc.is_alive():
                 continue
-            if getattr(proc, "_popen", None) is None:
-                print(f"[Pipeline] {name} process never started — skipping join")
-                continue
+            proc.join(timeout=3)
             if proc.is_alive():
-                proc.join(timeout=3)
-                if proc.is_alive():
-                    print(f"[Pipeline] {name} still alive — terminating")
-                    proc.terminate()
-                    proc.join(timeout=1)
+                proc.terminate()
+                proc.join(1)
+
 
 
 class Pipeline_audio:

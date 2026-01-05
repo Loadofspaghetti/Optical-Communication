@@ -73,6 +73,15 @@ class Shared:
             contents = "<unavailable>"
 
         print(f"[DEBUG] {name} | size={q.qsize()} | contents={contents}")
+
+
+    def flush_queue(self, q):
+        try:
+            while True:
+                q.get_nowait()
+        except Exception:
+            pass  # Queue is empty
+
     
 
     # --- Decoding worker ---
