@@ -6,7 +6,7 @@ import time
 import queue
 import numpy as np
 
-class shared:
+class Shared:
 
     def __init__(self):
         # Shared objects
@@ -162,4 +162,4 @@ class shared:
         return decoded_audio_data
     
 
-shared_class = shared()
+shared_class = Shared()

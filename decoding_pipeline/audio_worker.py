@@ -3,8 +3,8 @@
 import time
 import numpy as np
 
-from decoding_pipeline.shared_functions import shared as shared_class
-from utilities.decoding_functions import core_decode_audio
+from decoding_pipeline.shared_functions import Shared
+from utils.decoding_functions import core_decode_audio
 
 def audio_worker(
         bitgrid_queue, 
@@ -29,6 +29,7 @@ def audio_worker(
     quantized_amplitude_levels_per_time_frame = []
     last_queue_debug_print = 0
     last_debug_print = 0
+    shared_class = Shared()
 
     assert stop_event is not None, \
         "Checks if stop event is None"

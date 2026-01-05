@@ -2,7 +2,7 @@
 
 import time
 
-from utilities.decoding_functions import core_decode_message
+from utils.decoding_functions import core_decode_message
 from decoding_pipeline.shared_functions import shared_class
 
 def message_worker(

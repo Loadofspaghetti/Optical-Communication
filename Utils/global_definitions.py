@@ -122,7 +122,7 @@ margin = 15
 rows = 8
 columns = 8
 
-bits_per_cell = 1
+bits_per_cell = 3
 number_of_colors = 2 ** bits_per_cell 
 
 decode_bit_steps = 4

@@ -5,8 +5,8 @@ import queue
 import numpy as np
 import multiprocessing
 from multiprocessing import queues
-from utilities.decoding_functions import core_decode_bitgrid_hcv
-from utilities.color_functions_hcv import tracker, bitgrid_majority_calculator as numba, dominant_color_hcv
+from utils.decoding_functions import core_decode_bitgrid_hcv
+from utils.color_functions_hcv import bitgrid, bitgrid_majority_calculator as numba, dominant_color_hcv
 from decoding_pipeline.shared_functions import shared_class
 
 def decoding_worker(
@@ -48,7 +48,7 @@ def decoding_worker(
             cmd, payload = command_queue.get_nowait()
 
             if cmd == "set_lut":
-                tracker.LUT, tracker.color_names = payload
+                bitgrid.LUT, bitgrid.color_names = payload
                 LUT_ready = True
                 print("[WORKER] LUT received and initialized.")
                 warmup_all()

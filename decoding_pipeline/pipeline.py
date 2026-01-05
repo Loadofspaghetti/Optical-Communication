@@ -2,7 +2,7 @@
 
 import multiprocessing
 import psutil
-from decoding_pipeline.shared_functions import shared_class
+from decoding_pipeline.shared_functions import Shared
 from decoding_pipeline.decoder_worker import decoding_worker
 from decoding_pipeline.message_worker import message_worker
 from decoding_pipeline.audio_worker import audio_worker
@@ -26,13 +26,16 @@ _last_message_timestamp = None
 
 # --- Pipeline ---
 
-class pipeline_message:
+class Pipeline_message:
 
     def __init__(self):
         # Processes
         self._decode_process = None
         self._message_process = None
         self._watchdog_process = None
+
+        # Initialize classes
+        self.shared = Shared()
 
 
     def start_pipeline(self, core_decode_worker=None, core_message_worker=None, core_watchdog=None, queue_maxsize=100):
@@ -51,14 +54,14 @@ class pipeline_message:
                
 
         # Shared objects
-        shared_class.initialize_shared_objects(queue_maxsize)
+        self.shared.initialize_shared_objects(queue_maxsize)
 
         (
             self._frame_queue, self._command_queue, self._bitgrid_queue,
             self._message_queue, self._audio_queue,
             self._stop_event, self._last_frame, self._recall_flag,
             self._last_decode_timestamp, self._last_message_timestamp
-        ) = shared_class.get_shared_objects()
+        ) = self.shared.get_shared_objects()
 
         # Start decoding worker process
         self._decode_process = multiprocessing.Process(
@@ -174,13 +177,16 @@ class pipeline_message:
                     proc.join(timeout=1)
 
 
-class pipeline_audio:
+class Pipeline_audio:
 
     def __init__(self):
         # Processes
         self._decode_process = None
         self._audio_process = None
         self._watchdog_process = None
+
+        # Initialize classes
+        self.shared = Shared()
 
 
     def start_pipeline(self, core_decode_worker=None, core_audio_worker=None, core_watchdog=None, queue_maxsize=100):
@@ -200,14 +206,14 @@ class pipeline_audio:
                
 
         # Shared objects
-        shared_class.initialize_shared_objects(queue_maxsize)
+        self.shared.initialize_shared_objects(queue_maxsize)
 
         (
             self._frame_queue, self._command_queue, self._bitgrid_queue,
             self._message_queue, self._audio_queue, 
             self._stop_event, self._last_frame, self._recall_flag,
             self._last_decode_timestamp, self._last_message_timestamp
-        ) = shared_class.get_shared_objects()
+        ) = self.shared.get_shared_objects()
 
         # Start decoding worker process
         self._decode_process = multiprocessing.Process(
@@ -323,6 +329,6 @@ class pipeline_audio:
                     proc.join(timeout=1)
 
 
-pip_message = pipeline_message()
-pip_audio = pipeline_audio()
+pip_message = Pipeline_message()
+pip_audio = Pipeline_audio()
 
