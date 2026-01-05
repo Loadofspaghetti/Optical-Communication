@@ -9,7 +9,7 @@ from utils.image_generations import Create_frame
 from utils.screen_recorder import ScreenRecorder
 
 from utils.global_definitions import (
-    red_bgr, green_bgr, blue_bgr, white_bgr, black_bgr,
+    red_bgr, green_bgr, blue_bgr, white_bgr, black_bgr, orange_bgr, 
     gray_bgr, color_map_1bit, color_map_2bit, color_map_3bit, 
     bits_per_cell,
     sync_colors, number_of_sync_frames, sync_frame_duration,
@@ -155,9 +155,9 @@ class sender:
 
     def end_phase(self):
 
-        # A gray frame to signal the end of the message
+        # A orange frame to signal the end of the message
 
-        self.color_frames(gray_bgr, self.end_time)
+        self.color_frames(orange_bgr, self.end_time)
     
     def color_calibration_phase(self):
 
