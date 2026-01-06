@@ -51,7 +51,10 @@ def message_worker(
             decode_start = time.time()
 
 
+        # --- The message decoding ---
+
         if msg_bitgrid == "DATA":
+            print("[MESSAGE] Decoding data block.")
             if bitgrid is None or len(bitgrid) == 0:
                 continue
             block = "".join(core_decode_message(bitgrid))

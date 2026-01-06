@@ -131,7 +131,8 @@ class receiver:
                             #corrected_ranges = color_offset_calculation(roi)
                             corrected_ranges = range_calibration(self.warped)
                             LUT, color_names = build_color_LUT(corrected_ranges)
-                            bitgrid.colors(LUT, color_names)
+                            self.shared.push_LUT(LUT, color_names)
+                            print("\n[INFO] Color LUT built and sent to pipeline.")
 
                             warmup_all() # Warming up numba for use
                             

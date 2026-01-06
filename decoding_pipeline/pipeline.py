@@ -38,7 +38,7 @@ class Pipeline_message:
         self.shared = Shared()
 
 
-    def start_pipeline(self, core_decode_worker=None, core_message_worker=None, core_watchdog=None, queue_maxsize=100):
+    def start_pipeline(self, core_decode_worker=None, core_message_worker=None, core_watchdog=None, queue_maxsize=500):
         """
         Starts the decoding worker and watchdog processes.
 
@@ -152,11 +152,12 @@ class Pipeline_message:
         except: pass
         try: self._message_queue.put_nowait(None)
         except: pass
-
+        
         # flush queues to remove leftover items
         self.shared.flush_queue(self._bitgrid_queue)
         self.shared.flush_queue(self._message_queue)
         self.shared.flush_queue(self._frame_queue)
+        print("[Pipeline] Queues flushed.")
 
         # join processes
         for proc, name in [(self._decode_process,"decode"),

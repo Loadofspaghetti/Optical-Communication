@@ -294,7 +294,7 @@ def build_color_LUT(corrected_ranges):
     return LUT, color_names
 
 
-def dominant_color_hcv(hcv):
+def dominant_color_hcv(hcv, bitgrid=bitgrid):
 
     LUT = bitgrid.LUT
     names = bitgrid.color_names

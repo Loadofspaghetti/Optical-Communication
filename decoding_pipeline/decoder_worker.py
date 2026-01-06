@@ -6,7 +6,7 @@ import numpy as np
 import multiprocessing
 from multiprocessing import queues
 from utils.decoding_functions import core_decode_bitgrid_hcv
-from utils.color_functions_hcv import bitgrid, bitgrid_majority_calculator as numba, dominant_color_hcv
+from utils.color_functions_hcv import Bitgrid, bitgrid_majority_calculator as numba, dominant_color_hcv
 from decoding_pipeline.shared_functions import shared_class
 
 def decoding_worker(
@@ -34,6 +34,7 @@ def decoding_worker(
     last_timing_debug_print = 0
     LUT_ready = False
     bitgrid = [[]]  # Initialize bitgrid as empty list
+    bitgrid_class = Bitgrid()
 
     assert stop_event is not None, "stop_event must be provided"
     assert frame_queue is not None, "frame_queue must be provided"
@@ -42,13 +43,13 @@ def decoding_worker(
 
     while not stop_event.is_set() or not frame_queue.empty():
 
-        
+
         # Check for commands
         try:
             cmd, payload = command_queue.get_nowait()
 
             if cmd == "set_lut":
-                bitgrid.LUT, bitgrid.color_names = payload
+                bitgrid_class.LUT, bitgrid_class.color_names = payload
                 LUT_ready = True
                 print("[WORKER] LUT received and initialized.")
                 warmup_all()
@@ -61,16 +62,22 @@ def decoding_worker(
         except (queue.Empty, queues.Empty):
             pass
 
+
         # Don't decode until LUT exists
         if not LUT_ready:
             time.sleep(0.01)
             continue
 
+        print("[WORKER] Waiting for frame...")
+
         try:
-            # Frame format: (hcv_roi, recall, add_frame, end_frame)
+            print("[WORKER] Waiting for frame...")
             hcv_roi, add_frame, end_frame = frame_queue.get(timeout=0.1)
-        except Exception:
+            print("[WORKER] Frame received for decoding.")
+        except Exception as e:
+            print(f"[WORKER] Exception in frame_queue.get(): {type(e).__name__} - {e}")
             continue
+
 
         # --- Debugging ---
         if debug_worker:
@@ -82,7 +89,7 @@ def decoding_worker(
 
         # --- Decode frame ---
 
-        color = dominant_color_hcv(hcv_roi)
+        color = dominant_color_hcv(hcv_roi, bitgrid=bitgrid_class)
         
         if color != "orange":
             bitgrid = core_decode_bitgrid_hcv(hcv_roi, end_frame, debug_bytes=False)
@@ -92,11 +99,13 @@ def decoding_worker(
 
         # --- Skip invalid results ---
         if bitgrid is None or (isinstance(bitgrid, np.ndarray) and bitgrid.size == 0):
+            print("[WORKER] Invalid bitgrid decoded, skipping frame.")
             continue
 
         # --- Push into queue ---
         try:
             bitgrid_queue.put(("DATA", bitgrid), timeout=0.1)
+            print("[WORKER] Bitgrid pushed to queue.")
         except queue.Full:
             print("[WARNING] Bitgrid queue is full.")
 

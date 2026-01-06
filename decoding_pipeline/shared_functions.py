@@ -1,7 +1,7 @@
 # decoding_pipeline\shared_functions.py
 
 import multiprocessing
-from multiprocessing import shared_memory
+from multiprocessing import shared_memory, queues
 import time
 import queue
 import numpy as np
@@ -29,7 +29,7 @@ class Shared:
         self.dtype = np.uint8
 
 
-    def initialize_shared_objects(self, queue_maxsize=100):
+    def initialize_shared_objects(self, queue_maxsize=500):
         """
         Initializes shared objects for the decoding pipeline.
         """
@@ -91,27 +91,17 @@ class Shared:
         self.shm = shared_memory.SharedMemory(create=True, size=np.prod(frame_shape) * np.dtype(self.dtype).itemsize)
         self.shm_array = np.ndarray(frame_shape, dtype=self.dtype, buffer=self.shm.buf)
 
+    
+
     def push_frame(self, frame_data):
-        """
-        Push a frame into the shared decoding queue.
-
-        Arguments:
-            frame_data (tuple): (hcv_roi, add_frame, end_frame)
-        """
-
         if self._frame_queue is None:
-            raise RuntimeError("Pipeline not started. Call start_pipeline() first.")
-
-        '''
-        np.copyto(self.shm_array, hcv_roi)
-
-        queue_item = (self.shm.name, self.shm_array.shape, str(self.shm_array.dtype), add_frame, end_frame)
-        '''
+            raise RuntimeError("Pipeline not started.")
         try:
             self._frame_queue.put(frame_data, timeout=0.1)
+            #print("[Pipeline] Frame pushed to worker.")
         except multiprocessing.queues.Full:
-            # Optional: drop frame if queue is full
-            pass
+            print("[WARNING] Frame queue full, dropping frame")
+
 
     def push_LUT(self, LUT, color_names):
         """Send LUT to worker at any time after startup."""
