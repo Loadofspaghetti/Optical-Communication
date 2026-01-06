@@ -10,6 +10,7 @@ import time
 
 # Non-library imports
 
+from utils.color_functions_hcv import bitgrid as bitgrid_hcv
 from utils.color_functions_hsv import bitgrid as calc_bitgrid_hsv
 from utils.global_definitions import(
     rows, columns, number_of_sync_frames,
@@ -353,7 +354,7 @@ def decode_bitgrid_hcv_audio(hcv_frame, add_frame = False, recall = False, end_f
 # --- Core worker functions ---
 
 # Decode bitgrid
-def core_decode_bitgrid_hcv(hcv_frame, end_frame = False, debug_bytes = False):
+def core_decode_bitgrid_hcv(hcv_frame, end_frame = False, bitgrid=bitgrid_hcv, debug_bytes = False):
 
     """
     Handles bitgrid collection and decoding.
@@ -368,11 +369,11 @@ def core_decode_bitgrid_hcv(hcv_frame, end_frame = False, debug_bytes = False):
 
     if end_frame:
 
-        bitgrid = tracker_hcv.end_bit()
+        bitgrid = bitgrid.end_bit()
         return bitgrid
 
     else:
-        tracker_hcv.add_frame(hcv_frame)
+        bitgrid.add_frame(hcv_frame)
         return None
 
 # Decode message

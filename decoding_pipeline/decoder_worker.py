@@ -92,7 +92,7 @@ def decoding_worker(
         color = dominant_color_hcv(hcv_roi, bitgrid=bitgrid_class)
         
         if color != "orange":
-            bitgrid = core_decode_bitgrid_hcv(hcv_roi, end_frame, debug_bytes=False)
+            bitgrid = core_decode_bitgrid_hcv(hcv_roi, end_frame, bitgrid=bitgrid_class, debug_bytes=False)
         else:
             bitgrid_queue.put(("<COMPLETE>", None))
             continue
