@@ -68,14 +68,11 @@ def decoding_worker(
             time.sleep(0.01)
             continue
 
-        print("[WORKER] Waiting for frame...")
-
         try:
-            print("[WORKER] Waiting for frame...")
             hcv_roi, add_frame, end_frame = frame_queue.get(timeout=0.1)
-            print("[WORKER] Frame received for decoding.")
         except Exception as e:
-            print(f"[WORKER] Exception in frame_queue.get(): {type(e).__name__} - {e}")
+            if debug_worker:
+                print(f"[WORKER] Exception in frame_queue.get(): {type(e).__name__} - {e}")
             continue
 
 
@@ -95,17 +92,17 @@ def decoding_worker(
             bitgrid = core_decode_bitgrid_hcv(hcv_roi, end_frame, bitgrid=bitgrid_class, debug_bytes=False)
         else:
             bitgrid_queue.put(("<COMPLETE>", None))
-            continue
+            break
 
         # --- Skip invalid results ---
         if bitgrid is None or (isinstance(bitgrid, np.ndarray) and bitgrid.size == 0):
-            print("[WORKER] Invalid bitgrid decoded, skipping frame.")
+            if debug_worker:
+                print("[WORKER] Invalid bitgrid decoded, skipping frame.")
             continue
 
         # --- Push into queue ---
         try:
             bitgrid_queue.put(("DATA", bitgrid), timeout=0.1)
-            print("[WORKER] Bitgrid pushed to queue.")
         except queue.Full:
             print("[WARNING] Bitgrid queue is full.")
 

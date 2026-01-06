@@ -54,7 +54,6 @@ def message_worker(
         # --- The message decoding ---
 
         if msg_bitgrid == "DATA":
-            print("[MESSAGE] Decoding data block.")
             if bitgrid is None or len(bitgrid) == 0:
                 continue
             block = "".join(core_decode_message(bitgrid))
@@ -65,12 +64,12 @@ def message_worker(
 
         elif msg_bitgrid == "<FLUSH>":
             message_queue.put(message_buffer)
-            print(f"[MESSAGE] message complete, queue size: {message_queue.qsize()}")
+            print(f"[MESSAGE] message flushed, queue size: {message_queue.qsize()}")
             message_buffer = ""   # reset ONLY after full flush
 
         elif msg_bitgrid == "<COMPLETE>":
             message_queue.put(message_buffer)
-            print(f"[MESSAGE] message flushed, queue size: {message_queue.qsize()}")
+            print(f"[MESSAGE] message complete, queue size: {message_queue.qsize()}")
             message_buffer = ""   # reset ONLY after full message
         elif msg_bitgrid == "shutdown":
             print("[MESSAGE] Shutdown received.")

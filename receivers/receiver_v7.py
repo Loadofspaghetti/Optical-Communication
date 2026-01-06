@@ -178,7 +178,6 @@ class receiver:
             None
         """
 
-        recall = False
         end_frame = False
         add_frame = False
 
@@ -193,15 +192,11 @@ class receiver:
             add_frame = True 
             self.last_frame_time = current_time 
 
-        elif self.color in ["white", "black"]:
+        elif self.color != "orange":
             
             # add_frame → add frame to array
 
             add_frame = True
-
-        elif self.color == "orange" and self.last_color != "orange":
-
-            recall = True
 
         try:
             self.warped = bgr_to_hcv(self.warped)
@@ -266,7 +261,7 @@ class receiver:
                 # Reads the dominant color inside the ROI
                 self.color = dominant_color_bgr(self.roi)
             else:
-                self.roi = cv2.cvtColor(self.roi, cv2.COLOR_BGR2HSV)
+                self.roi = bgr_to_hcv(self.roi)
                 self.color = dominant_color_hcv(self.roi)
 
 

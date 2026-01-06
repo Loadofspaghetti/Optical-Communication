@@ -112,27 +112,26 @@ class Shared:
     # --- Message worker ---
 
     def pull_decoded_message(self, max_wait=0.5):
-        """
-        Pull a decoded message from the message worker without blocking the GUI.
-        
-        Arguments:
-            max_wait (float): Maximum time in seconds to wait for a message.
-        """
-
-        self._bitgrid_queue.put(("<FLUSH>", None))
-        
-        start_time = time.time()
-
+        deadline = time.time() + max_wait
         decoded_message = None
-        while time.time() - start_time < max_wait:
-            try:
-                decoded_message = self._message_queue.get_nowait()
-                break  # message received
-            except queue.Empty:
-                time.sleep(0.01)  # yield CPU / allow GUI to check for input
 
-        
+        while time.time() < deadline:
+            try:
+                # Wait briefly for at least ONE item
+                decoded_message = self._message_queue.get(timeout=0.05)
+
+                # Drain the rest without blocking
+                while True:
+                    decoded_message = self._message_queue.get_nowait()
+
+            except queue.Empty:
+                if decoded_message is not None:
+                    return decoded_message
+                # nothing yet → keep waiting
+
         return decoded_message
+
+
     
 
     # --- Audio worker ---
