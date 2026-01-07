@@ -18,7 +18,7 @@ from decoding_pipeline.shared_functions import Shared
 from decoding_pipeline.pipeline import Pipeline_message
 
 from utils.color_functions_bgr import dominant_color as dominant_color_bgr
-from utils.color_functions_hcv import build_color_LUT, bitgrid, bitgrid_majority_calculator, range_calibration, \
+from utils.color_functions_hcv import build_color_LUT, Bitgrid, bitgrid_majority_calculator, range_calibration, \
 dominant_color_hcv, bgr_to_hcv
 from utils.screen_alignment import homography_from_large_markers, warp_alignment
 from utils import decoding_functions
@@ -29,7 +29,7 @@ from utils.global_definitions import (
 )
 
 
-class receiver:
+class Receiver:
 
     def __init__(self, video_cap, shared=None):
 
@@ -83,6 +83,7 @@ class receiver:
         self.homography = None
 
         # Initialize classes or use provided shared instance
+        self.bitgrid = Bitgrid()
         self.shared = shared if shared is not None else Shared()
         
     
@@ -131,6 +132,7 @@ class receiver:
                             #corrected_ranges = color_offset_calculation(roi)
                             corrected_ranges = range_calibration(self.warped)
                             LUT, color_names = build_color_LUT(corrected_ranges)
+                            self.bitgrid.LUT, self.bitgrid.color_names = LUT, color_names
                             self.shared.push_LUT(LUT, color_names)
                             print("\n[INFO] Color LUT built and sent to pipeline.")
 
@@ -257,12 +259,12 @@ class receiver:
                 # Extract the ROI from the frame
                 self.roi = self.frame[self.frame_start_y_roi:self.frame_end_y_roi, self.frame_start_x_roi:self.frame_end_x_roi] 
             
-            if bitgrid.LUT is None:
+            if self.bitgrid.LUT is None:
                 # Reads the dominant color inside the ROI
                 self.color = dominant_color_bgr(self.roi)
             else:
                 self.roi = bgr_to_hcv(self.roi)
-                self.color = dominant_color_hcv(self.roi)
+                self.color = dominant_color_hcv(self.roi, self.bitgrid)
 
 
             # Searches for arucos until found
@@ -366,7 +368,7 @@ if __name__ == "__main__":
     # Start pipeline
     pipeline.start_pipeline(core_decode_worker=[4, 3, 2], core_message_worker=[5], core_watchdog=[6])
     
-    receiver_ = receiver(videoCapture, shared=pipeline.shared)
+    receiver_ = Receiver(videoCapture, shared=pipeline.shared)
     try:
         decoded_message = receiver_.decrypt_message()
     except KeyboardInterrupt:
