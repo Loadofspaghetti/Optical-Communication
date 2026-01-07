@@ -4,7 +4,7 @@
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="dK_DmynriwnuHz55IsVn-1" parent="1" style="text;strokeColor=none;fillColor=none;html=1;fontSize=24;fontStyle=1;verticalAlign=middle;align=center;" value="optical-communication" vertex="1">
+        <mxCell id="dK_DmynriwnuHz55IsVn-1" parent="1" style="text;strokeColor=none;fillColor=none;html=1;fontSize=24;fontStyle=1;verticalAlign=middle;align=center;" value="Overlaying pipeline" vertex="1">
           <mxGeometry height="40" width="100" x="-50" y="40" as="geometry" />
         </mxCell>
         <mxCell id="yjVsDsReb3DYUO1FZKyD-2" edge="1" parent="1" source="dK_DmynriwnuHz55IsVn-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="LbWrGKweOdjH7E05gEht-34">
