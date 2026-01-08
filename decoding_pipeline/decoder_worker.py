@@ -41,6 +41,10 @@ def decoding_worker(
     assert command_queue is not None, "command_queue must be provided"
     assert bitgrid_queue is not None, "bitgrid_queue must be provided"
 
+    # Pre-compile numba functions
+    warmup_all()
+    print("[WORKER] numba pre-compiled.")
+
     while not stop_event.is_set() or not frame_queue.empty():
 
 
@@ -52,8 +56,6 @@ def decoding_worker(
                 bitgrid_class.LUT, bitgrid_class.color_names = payload
                 LUT_ready = True
                 print("[WORKER] LUT received and initialized.")
-                warmup_all()
-                print("[WORKER] numba pre-compiled.")
 
             elif cmd == "shutdown":
                 print("[Worker] Shutdown received.")
@@ -96,8 +98,6 @@ def decoding_worker(
 
         # --- Skip invalid results ---
         if bitgrid is None or (isinstance(bitgrid, np.ndarray) and bitgrid.size == 0):
-            if debug_worker:
-                print("[WORKER] Invalid bitgrid decoded, skipping frame.")
             continue
 
         # --- Push into queue ---

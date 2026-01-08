@@ -6,6 +6,7 @@
 
 import time
 import cv2
+import cupy as cp
 import numpy as np
 from numba import njit, prange
 
@@ -169,54 +170,46 @@ class Bitgrid:
         self.LUT = LUT
         self.color_names = color_names
 
-@njit(parallel = True)
-def bitgrid_majority_calculator(patch_class_array, number_of_classes):
 
+def bitgrid_majority_calculator(patch_class_array, number_of_classes):
     """
-    Aggregates patches of class labels for each cell in a grid and assigns the cell its most frequently occurring label.
+    Memory-efficient, fully batched GPU version of majority-vote bitgrid calculator using CuPy.
+    Computes majority per grid cell in a single kernel launch without creating large boolean arrays.
 
     Arguments:
-        "patch_class_array": A 5-dimensional array (tensor).
-        "number_of_classes": The total number of distinct class labels that "patch_class_array" can contain.
-    
-    Returns:
-        "out": A grid of majority labels.
+        patch_class_array: 5D NumPy array (num_frames, grid_rows, patch_h, grid_cols, patch_w)
+        number_of_classes: integer, number of classes
 
+    Returns:
+        out: 2D NumPy array of shape (grid_rows, grid_cols) with majority class per cell
     """
 
-    number_of_frames, number_of_grid_rows, patch_heights, number_of_grid_columns, patch_widths = patch_class_array.shape # Extracts the five dimensions of "patch_class_array"
+    # Move input to GPU
+    patch_gpu = cp.array(patch_class_array, dtype=cp.int32)
 
-    out = np.empty((number_of_grid_rows, number_of_grid_columns), dtype = np.int32) # Creates an empty integer array to store the majority class for each grid coordinate
+    num_frames, grid_rows, patch_h, grid_cols, patch_w = patch_gpu.shape
 
-    for row in prange(number_of_grid_rows): # For each row:
+    # Flatten patch dimensions and frames per cell, then flatten grid
+    # Shape: (pixels_per_cell, num_cells)
+    flat_gpu = patch_gpu.reshape(num_frames * patch_h * patch_w, grid_rows * grid_cols)
 
-        for column in range(number_of_grid_columns): # For each column:
+    # Use cp.bincount with axis=0 for batched counting per cell
+    # Resulting shape: (number_of_classes, num_cells)
+    counts_gpu = cp.vstack([
+        cp.sum(flat_gpu == cls, axis=0) for cls in range(number_of_classes)
+    ])
 
-            counts = np.zeros(number_of_classes, dtype = np.int32) # Create a histogram array to accumulate how often each class appears in the cell region
+    # Majority vote: argmax along class axis
+    majority_gpu = cp.argmax(counts_gpu, axis=0)
 
-            for sample in range(number_of_frames): # For each frame:
+    # Reshape back to 2D grid
+    out_gpu = majority_gpu.reshape(grid_rows, grid_cols)
 
-                for patch_height in range(patch_heights): # Loop over the patch height:
+    # Move result back to CPU
+    return cp.asnumpy(out_gpu)
 
-                    for patch_width in range(patch_widths): # Loop over the patch width:
 
-                        class_id = patch_class_array[sample, row, patch_height, column, patch_width] # Extract the class ID at these coordinates
 
-                        if 0 <= class_id < number_of_classes: # If the class ID number is within the given class ID range
-                            counts[class_id] += 1 # Increase the counter for that class ID
-
-            majority_class_id = 0 # Initialize the majority class id as 0
-            majority_class_count = counts[majority_class_id] # Initializes the majority class value
-
-            for class_id_index in range(1, number_of_classes): # Argmax to find the class with the highest frequency
-
-                if counts[class_id_index] > majority_class_count:
-                    majority_class_id = class_id_index
-                    majority_class_count = counts[class_id_index]
-
-            out[row, column] = majority_class_id # Assign the majority class to the output grid
-
-    return out
 
 bitgrid = Bitgrid()
 

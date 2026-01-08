@@ -72,7 +72,7 @@ class Pipeline_message:
                 bitgrid_queue=self._bitgrid_queue,
                 stop_event=self._stop_event,
                 last_decode_timestamp=self._last_decode_timestamp,
-                debug_worker=False
+                debug_worker=True
             ),
             daemon=True
         )
@@ -97,7 +97,7 @@ class Pipeline_message:
                 message_queue=self._message_queue, 
                 stop_event=self._stop_event, 
                 last_message_timestamp=self._last_message_timestamp, 
-                debug_worker=True
+                debug_worker=False
             ),
             daemon=True
         )
