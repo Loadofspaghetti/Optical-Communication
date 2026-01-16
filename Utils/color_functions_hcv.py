@@ -7,6 +7,7 @@
 import time
 import cv2
 import cupy as cp
+import cupyx
 import numpy as np
 from numba import njit, prange
 
@@ -172,31 +173,62 @@ class Bitgrid:
 
 
 def bitgrid_majority_calculator(patch_class_array, number_of_classes):
-    """
-    Memory-efficient, fully batched GPU version of majority-vote bitgrid calculator using CuPy.
-    Computes majority per grid cell in a single kernel launch without creating large boolean arrays.
+    # ---- Move to GPU ----
+    patch_gpu = cp.asarray(patch_class_array, dtype=cp.int32)
 
-    Arguments:
-        patch_class_array: 5D NumPy array (num_frames, grid_rows, patch_h, grid_cols, patch_w)
-        number_of_classes: integer, number of classes
+    # (frames, rows, patch_h, cols, patch_w)
+    patch_gpu = patch_gpu.transpose(1, 3, 0, 2, 4)
+    # (rows, cols, frames, patch_h, patch_w)
 
-    Returns:
-        out: 2D NumPy array of shape (grid_rows, grid_cols) with majority class per cell
-    """
+    rows, cols, frames, ph, pw = patch_gpu.shape
 
-    # Move input to GPU
+    # ---- Flatten into (cells, samples) ----
+    flat = patch_gpu.reshape(
+        rows * cols,
+        frames * ph * pw
+    )
+
+    # ---- Allocate count matrix ----
+    counts = cp.zeros((rows * cols, number_of_classes), dtype=cp.int32)
+
+    # ---- Atomic scatter-add (THIS IS THE FIX) ----
+    cell_indices = cp.repeat(
+        cp.arange(rows * cols, dtype=cp.int32),
+        flat.shape[1]
+    )
+    class_indices = flat.ravel()
+
+    cupyx.scatter_add(
+        counts,
+        (cell_indices, class_indices),
+        1
+    )
+
+    # ---- Majority vote ----
+    majority = cp.argmax(counts, axis=1)
+
+    return cp.asnumpy(majority.reshape(rows, cols))
+
+
+
+'''
+def bitgrid_majority_calculator(patch_class_array, number_of_classes):
+    
     patch_gpu = cp.array(patch_class_array, dtype=cp.int32)
+    # BEFORE: (frames, rows, patch_h, cols, patch_w)
+    patch_gpu = patch_gpu.transpose(
+        1, 3, 0, 2, 4
+    )
+    # AFTER: (rows, cols, frames, patch_h, patch_w)
 
-    num_frames, grid_rows, patch_h, grid_cols, patch_w = patch_gpu.shape
+    grid_rows, grid_cols, num_frames, patch_h, patch_w = patch_gpu.shape
 
-    # Flatten patch dimensions and frames per cell, then flatten grid
-    # Shape: (pixels_per_cell, num_cells)
-    flat_gpu = patch_gpu.reshape(num_frames * patch_h * patch_w, grid_rows * grid_cols)
+    flat_gpu = patch_gpu.reshape(grid_rows * grid_cols, num_frames * patch_h * patch_w)
 
     # Use cp.bincount with axis=0 for batched counting per cell
     # Resulting shape: (number_of_classes, num_cells)
     counts_gpu = cp.vstack([
-        cp.sum(flat_gpu == cls, axis=0) for cls in range(number_of_classes)
+        cp.sum(flat_gpu == cls, axis=1) for cls in range(number_of_classes)
     ])
 
     # Majority vote: argmax along class axis
@@ -207,7 +239,7 @@ def bitgrid_majority_calculator(patch_class_array, number_of_classes):
 
     # Move result back to CPU
     return cp.asnumpy(out_gpu)
-
+'''
 
 
 
