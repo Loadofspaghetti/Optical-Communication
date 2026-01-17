@@ -2,7 +2,9 @@
 
 import time
 import queue
+from tracemalloc import start
 import numpy as np
+import cupy as cp
 import multiprocessing
 from multiprocessing import queues
 from utils.decoding_functions import core_decode_bitgrid_hcv
@@ -91,7 +93,10 @@ def decoding_worker(
         color = dominant_color_hcv(hcv_roi, bitgrid=bitgrid_class)
         
         if color != "orange":
+            start = time.perf_counter()
             bitgrid = core_decode_bitgrid_hcv(hcv_roi, end_frame, bitgrid=bitgrid_class, debug_bytes=False)
+            cp.cuda.runtime.deviceSynchronize()
+            print(f"[WORKER] Majority time: {(time.perf_counter() - start)*1000:.2f} ms")
         else:
             bitgrid_queue.put(("<COMPLETE>", None))
             break

@@ -338,8 +338,11 @@ if __name__ == "__main__":
 
     # --- Profiling ---
 
-    profiler = cProfile.Profile()
-    profiler.enable()
+    isProfiling = False
+
+    if isProfiling:
+        profiler = cProfile.Profile()
+        profiler.enable()
     
     # --- Definitions ---
 
@@ -403,11 +406,12 @@ if __name__ == "__main__":
 
     # --- Profiling ---
 
-    profiler.disable()
+    if isProfiling:
+        profiler.disable()
 
-    stats = pstats.Stats(profiler)
-    stats.strip_dirs() # Removes directorys
-    stats.sort_stats("cumtime") # Sorts by cumulative time
-    stats.print_stats(20) # Prints only top 20 functions
+        stats = pstats.Stats(profiler)
+        stats.strip_dirs() # Removes directorys
+        stats.sort_stats("cumtime") # Sorts by cumulative time
+        stats.print_stats(20) # Prints only top 20 functions
     
 

@@ -191,7 +191,7 @@ def bitgrid_majority_calculator(patch_class_array, number_of_classes):
     # ---- Allocate count matrix ----
     counts = cp.zeros((rows * cols, number_of_classes), dtype=cp.int32)
 
-    # ---- Atomic scatter-add (THIS IS THE FIX) ----
+    # ---- Atomic scatter-add ----
     cell_indices = cp.repeat(
         cp.arange(rows * cols, dtype=cp.int32),
         flat.shape[1]
