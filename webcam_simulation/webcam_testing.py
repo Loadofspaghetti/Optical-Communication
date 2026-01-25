@@ -7,7 +7,7 @@ if __name__ == "__main__":
     width = 640
     height = 480
 
-    videoCapture = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    videoCapture = cv2.VideoCapture(0, cv2.CAP_MSMF)
 
     # Resolution
 
@@ -62,6 +62,8 @@ if __name__ == "__main__":
             print(f"[INFO] Loops per second: {frame_count}")
             frame_count = 0
             previous_time = current_time
+
+        cv2.imshow("Webcam Frame", frame)
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
