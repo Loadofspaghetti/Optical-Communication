@@ -227,9 +227,9 @@ class VideoProcessCapture:
 
         if idx == 0:
             # copy the frame out (safe)
-            return True, self._buf0.copy()
+            return True, self._buf0.copy(), 0
         else:
-            return True, self._buf1.copy()
+            return True, self._buf1.copy(), 1
 
     def isOpened(self):
         return self._is_opened and (not self._stop_flag.value)

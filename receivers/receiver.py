@@ -40,6 +40,7 @@ class Receiver:
         self.frame = None
         self.warped = None
         self.roi = None
+        self.previousBuf = 2
 
         # Strings
         self.which_method = ""
@@ -245,7 +246,20 @@ class Receiver:
         frame_count = 0
 
         while True:
+
+            # --- Main loop ---
             
+            # Grabbing frames
+            ret, frame, whichBuf = self.video_cap.read()
+            
+            if not ret:
+                continue
+
+            if whichBuf == self.previousBuf:
+                continue
+            else:
+                self.previousBuf = whichBuf
+
             # --- Loops per second ---
 
             frame_count += 1
@@ -256,14 +270,6 @@ class Receiver:
                 print(f"[INFO] Loops per second: {frame_count}")
                 frame_count = 0
                 previous_time = current_time
-
-            # --- Main loop ---
-            
-            # Grabbing frames
-            ret, frame = self.video_cap.read()
-            
-            if not ret:
-                continue
 
             self.frame = frame
 
@@ -353,7 +359,7 @@ if __name__ == "__main__":
 
     if using_webcam:
 
-        videoCapture = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        videoCapture = cv2.VideoCapture(0, cv2.CAP_MSMF)
 
         # Resolution
 
@@ -385,7 +391,7 @@ if __name__ == "__main__":
 
     while True:
 
-        read_was_sucessful, frame = videoCapture.read() # Tries to grab one initial frame to make sure the video capture is "warmed up"
+        read_was_sucessful, frame, _ = videoCapture.read() # Tries to grab one initial frame to make sure the video capture is "warmed up"
 
         if read_was_sucessful:
             break
