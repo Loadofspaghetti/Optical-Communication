@@ -20,7 +20,7 @@ from decoding_pipeline.shared_functions import Shared
 from decoding_pipeline.pipeline import Pipeline_message
 
 from utils.color_functions_bgr import dominant_color as dominant_color_bgr
-from utils.color_functions_hcv import build_color_LUT, Bitgrid, bitgrid_majority_calculator, range_calibration, \
+from utils.color_functions_hcv import build_color_LUT, Bitgrid, range_calibration, \
 dominant_color_hcv, bgr_to_hcv
 from utils.screen_alignment import homography_from_large_markers, warp_alignment
 from utils import decoding_functions

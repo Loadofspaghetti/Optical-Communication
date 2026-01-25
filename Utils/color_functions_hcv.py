@@ -11,6 +11,8 @@ import cupyx
 import numpy as np
 from numba import njit, prange
 
+from utils.GPU.bitgrid_majority_calc import Bitgrid_Majority
+
 # Non-library modules
 
 from utils.global_definitions import (
@@ -29,15 +31,7 @@ from utils.global_definitions import (
 
 class Bitgrid:
 
-    """
-    
-    """
-
     def __init__(self):
-        
-        """
-        
-        """
 
         self.time_in = 0
         self.rows = rows
@@ -46,20 +40,13 @@ class Bitgrid:
         self.LUT = None
         self.color_names = None
 
+        self.bitgrid_majority_calculator = None
+
     def add_frame(self, hcv_roi):
-        
-        """
-        
-        """
 
         self.hcv_frames.append(hcv_roi)
 
     def _pad_frames(self, frames):
-
-        
-        """
-        
-        """
 
         _, H, W, _ = frames.shape
 
@@ -77,19 +64,6 @@ class Bitgrid:
         return padded_frames, cell_height, cell_width
   
     def end_bit(self):
-
-        """
-        Processes accumulated HCV frames to extract a bit grid representation.
-        This is done by dividing each frame into a grid of cells, sampling central patches from each cell, classifying the patches using a lookup table and then computing a majority vote.
-        
-        Arguments:
-            "self"
-        
-        Returns:
-            "bitgrid_2bit" (np.array): A 2D array containing bit values for each grid cell.
-            None
-            
-        """
 
         if len(self.hcv_frames) == 0:
             return None
@@ -126,7 +100,12 @@ class Bitgrid:
         merged = classes
 
         number_of_classes = int(self.LUT.max()) + 1
-        bitgrid = bitgrid_majority_calculator(merged, number_of_classes)
+
+        if self.bitgrid_majority_calculator is None:
+            self.bitgrid_majority_calculator = Bitgrid_Majority(merged, number_of_classes)
+            print("[INFO] Initialized Bitgrid Majority Calculator")
+
+        bitgrid = self.bitgrid_majority_calculator.compute(merged)
 
         if bits_per_cell == 1:
             idx_to_bit = idx_to_1bit
@@ -170,77 +149,6 @@ class Bitgrid:
 
         self.LUT = LUT
         self.color_names = color_names
-
-
-def bitgrid_majority_calculator(patch_class_array, number_of_classes):
-    # ---- Move to GPU ----
-    patch_gpu = cp.asarray(patch_class_array, dtype=cp.int32)
-
-    # (frames, rows, patch_h, cols, patch_w)
-    patch_gpu = patch_gpu.transpose(1, 3, 0, 2, 4)
-    # (rows, cols, frames, patch_h, patch_w)
-
-    rows, cols, frames, ph, pw = patch_gpu.shape
-
-    # ---- Flatten into (cells, samples) ----
-    flat = patch_gpu.reshape(
-        rows * cols,
-        frames * ph * pw
-    )
-
-    # ---- Allocate count matrix ----
-    counts = cp.zeros((rows * cols, number_of_classes), dtype=cp.int32)
-
-    # ---- Atomic scatter-add ----
-    cell_indices = cp.repeat(
-        cp.arange(rows * cols, dtype=cp.int32),
-        flat.shape[1]
-    )
-    class_indices = flat.ravel()
-
-    cupyx.scatter_add(
-        counts,
-        (cell_indices, class_indices),
-        1
-    )
-
-    # ---- Majority vote ----
-    majority = cp.argmax(counts, axis=1)
-
-    return cp.asnumpy(majority.reshape(rows, cols))
-
-
-
-'''
-def bitgrid_majority_calculator(patch_class_array, number_of_classes):
-    
-    patch_gpu = cp.array(patch_class_array, dtype=cp.int32)
-    # BEFORE: (frames, rows, patch_h, cols, patch_w)
-    patch_gpu = patch_gpu.transpose(
-        1, 3, 0, 2, 4
-    )
-    # AFTER: (rows, cols, frames, patch_h, patch_w)
-
-    grid_rows, grid_cols, num_frames, patch_h, patch_w = patch_gpu.shape
-
-    flat_gpu = patch_gpu.reshape(grid_rows * grid_cols, num_frames * patch_h * patch_w)
-
-    # Use cp.bincount with axis=0 for batched counting per cell
-    # Resulting shape: (number_of_classes, num_cells)
-    counts_gpu = cp.vstack([
-        cp.sum(flat_gpu == cls, axis=1) for cls in range(number_of_classes)
-    ])
-
-    # Majority vote: argmax along class axis
-    majority_gpu = cp.argmax(counts_gpu, axis=0)
-
-    # Reshape back to 2D grid
-    out_gpu = majority_gpu.reshape(grid_rows, grid_cols)
-
-    # Move result back to CPU
-    return cp.asnumpy(out_gpu)
-'''
-
 
 
 bitgrid = Bitgrid()

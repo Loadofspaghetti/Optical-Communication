@@ -8,7 +8,8 @@ import cupy as cp
 import multiprocessing
 from multiprocessing import queues
 from utils.decoding_functions import core_decode_bitgrid_hcv
-from utils.color_functions_hcv import Bitgrid, bitgrid_majority_calculator as numba, dominant_color_hcv
+from utils.color_functions_hcv import Bitgrid, dominant_color_hcv
+from utils.GPU.bitgrid_majority_calc import Bitgrid_Majority as kernel_Bitgrid
 from decoding_pipeline.shared_functions import shared_class
 
 def decoding_worker(
@@ -133,4 +134,5 @@ def warmup_all():
     """
 
     dummy_array = np.zeros((2, 2, 8, 16, 10), dtype = np.uint8)
-    numba(dummy_array, 5)
+    Bitgrid = kernel_Bitgrid(dummy_array, 5)
+    Bitgrid.compute(dummy_array)
